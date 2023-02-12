@@ -1,0 +1,17 @@
+(library
+ (name greet)
+ (modules greet))
+
+(executable
+ (name greet_cmdliner)
+ (modules greet_cmdliner)
+ (preprocess
+  (pps ppx_deriving_cmdliner))
+ (libraries cmdliner greet))
+
+(executable
+ (name greet_subliner)
+ (modules greet_subliner)
+ (preprocess
+  (pps ppx_deriving_cmdliner ppx_subliner))
+ (libraries greet))
