@@ -1,1 +1,9 @@
-# ppx_deriving_subliner
+# [@@deriving subliner]
+[![OCaml](https://img.shields.io/badge/-OCaml-EC6813?logo=ocaml&labelColor=grey)](#)
+[![CI](https://github.com/bn-d/ppx_subliner/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/bn-d/ppx_subliner/actions/workflows/build.yml)
+[![GitHub release status](https://img.shields.io/github/v/release/bn-d/ppx_subliner)](https://github.com/bn-d/ppx_subliner/releases)
+
+Ppxlib based [@@deriving] plugin to generate Cmdliner sub-commands.
+
+## Usage
+Please see the [documentation](https://boni.ng/ppx_make/ppx_subliner/index.html).

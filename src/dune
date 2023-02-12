@@ -1,0 +1,7 @@
+(library
+ (public_name ppx_subliner)
+ (kind ppx_deriver)
+ (preprocess
+  (pps ppxlib.metaquot))
+ (libraries ppxlib)
+ (ppx_runtime_libraries cmdliner))

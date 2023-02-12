@@ -1,0 +1,14 @@
+# ocamlbuild working directory
+_build/
+
+# Merlin configuring file for Vim and Emacs
+.merlin
+
+# Dune generated files
+*.install
+
+# Local OPAM switch
+_opam/
+
+# Vim buffer
+*.sw[pqr]
