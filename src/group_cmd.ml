@@ -72,10 +72,8 @@ let fun_core_type_of_type_name ~loc name =
   let type_ct = Ast_helper.Typ.constr lid [] in
   [%type: ([%t type_ct] -> 'a) -> 'a Cmdliner.Cmd.t list]
 
-let structure_of_variant_choices
-    ~loc
-    name
-    (cds : constructor_declaration list) =
+let structure_of_variant_choices ~loc name (cds : constructor_declaration list)
+    =
   Ast_helper.with_default_loc loc (fun () ->
       let gcmds_fun =
         let pat = Ast_helper.Pat.var @@ gen_gcmds_fun_name name

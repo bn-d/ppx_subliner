@@ -3,8 +3,7 @@ open Ppxlib
 (* generate structure for type declaration *)
 let structure_of_type_decl ~loc:_ (_rec_flag : rec_flag) (td : type_declaration)
     : structure =
-  let name = td.ptype_name
-  and loc = td.ptype_loc in
+  let name = td.ptype_name and loc = td.ptype_loc in
   let () = Utils.check_params_empty name td.ptype_params in
   match td with
   | { ptype_kind = Ptype_variant cds; _ } ->
