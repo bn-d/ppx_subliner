@@ -9,22 +9,27 @@ type params =
 
 let _ = fun (_ : params) -> ()
 
-let (make_params_cmdliner_group_cmds :
-  (params -> 'a) -> 'a Cmdliner.Cmd.t list) =
-  fun func ->
-    let subcmd_english =
-      let info = Cmdliner.Cmd.info ~doc:" Greet in English " "english"
-      and f params = func (English params) in
-      let open Cmdliner in
-        Cmd.v info
-          (let open Term in (const f) $ (subparams_cmdliner_term ()))
-    and subcmd_chinese =
-      let info = Cmdliner.Cmd.info ~doc:" Greet in Chinese " "chinese"
-      and f params = func (Chinese params) in
-      let open Cmdliner in
-        Cmd.v info
-          (let open Term in (const f) $ (subparams_cmdliner_term ())) in
-    [subcmd_english; subcmd_chinese]
+let (make_params_cmdliner_group_cmds : (params -> 'a) -> 'a Cmdliner.Cmd.t list)
+    =
+ fun func ->
+  let subcmd_english =
+    let info : Cmdliner.Cmd.info =
+      Cmdliner.Cmd.info ~doc:" Greet in English " "english"
+    and f params = func (English params) in
+    let open Cmdliner in
+    Cmd.v info
+      (let open Term in
+      const f $ subparams_cmdliner_term ())
+  and subcmd_chinese =
+    let info : Cmdliner.Cmd.info =
+      Cmdliner.Cmd.info ~doc:" Greet in Chinese " "chinese"
+    and f params = func (Chinese params) in
+    let open Cmdliner in
+    Cmd.v info
+      (let open Term in
+      const f $ subparams_cmdliner_term ())
+  in
+  [ subcmd_english; subcmd_chinese ]
 
 let _ = make_params_cmdliner_group_cmds
 
