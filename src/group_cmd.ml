@@ -54,7 +54,7 @@ let cmd_vb_expr_of_const_decls
         and expr =
           (* Cmd.info *)
           let cmd_info_expr =
-            (* get cmd info from attributes *)
+            (* get cmd info args from attributes *)
             let args =
               (* lower case constructor name will be the default cmd name *)
               let default_name_expr =
@@ -64,11 +64,10 @@ let cmd_vb_expr_of_const_decls
                 cd.pcd_attributes
             in
             Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
-            (* 'params Term.t *)
+            (* ('params -> 'result) * 'params Term.t *)
           and handle_expr, params_term_expr =
             handle_params_term_expr_of_const_args ~loc func_expr cd
           in
-
           [%expr
             let info : Cmdliner.Cmd.info = [%e cmd_info_expr]
             and handle = [%e handle_expr] in
@@ -80,23 +79,27 @@ let cmd_vb_expr_of_const_decls
       in
       (vb, var_expr))
 
-let fun_core_type_of_type_name ~loc name =
-  let lid = Utils.longident_loc_of_name name in
-  let ct = Ast_helper.Typ.constr lid [] in
+let core_type_of_type_name ~loc name =
+  let ct =
+    let lid = Utils.longident_loc_of_name name in
+    Ast_helper.Typ.constr lid []
+  in
   [%type: ([%t ct] -> 'a) -> 'a Cmdliner.Cmd.t list]
 
 let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
       let stri =
         let pat = Ast_helper.Pat.var @@ gen_name name
-        and ct = fun_core_type_of_type_name ~loc name
-        and func_expr = [%expr func] in
-        let cmd_vbs, cmd_exprs =
-          cds |> List.map (cmd_vb_expr_of_const_decls func_expr) |> List.split
+        and ct = core_type_of_type_name ~loc name
+        and expr =
+          let cmd_vbs, cmd_exprs =
+            cds
+            |> List.map (cmd_vb_expr_of_const_decls [%expr func])
+            |> List.split
+          in
+          let cmd_list_expr = Ast_builder.Default.elist ~loc cmd_exprs in
+          Ast_helper.Exp.let_ Nonrecursive cmd_vbs cmd_list_expr
         in
-
-        let cmd_list_expr = Ast_builder.Default.elist ~loc cmd_exprs in
-        let expr = Ast_helper.Exp.let_ Nonrecursive cmd_vbs cmd_list_expr in
         [%stri let ([%p pat] : [%t ct]) = fun func -> [%e expr]]
       in
       [ stri ])
@@ -105,7 +108,7 @@ let signature_of_const_decls ~loc name (_cds : constructor_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
       let sigi =
         let fun_name = gen_name name
-        and ct = fun_core_type_of_type_name ~loc name in
+        and ct = core_type_of_type_name ~loc name in
         Ast_helper.Val.mk fun_name ct |> Ast_helper.Sig.value
       in
       [ sigi ])

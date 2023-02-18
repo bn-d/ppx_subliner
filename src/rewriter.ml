@@ -42,12 +42,13 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
           Attribute_utils.Cmd_info.to_args ~default_name_expr attrs
         in
         Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
-      and  params_term_expr =
+      and params_term_expr =
         lid |> Utils.map_lid_name Term.gen_name_str |> Ast_helper.Exp.ident
       in
       [%expr
         let info : Cmdliner.Cmd.info = [%e cmd_info_expr] in
-        Cmdliner.(Cmd.v info Term.(const [%e func_expr] $ [%e params_term_expr] ()))]
+        Cmdliner.(
+          Cmd.v info Term.(const [%e func_expr] $ [%e params_term_expr] ()))]
 
 let eval_fun_of_expr ~loc ~attrs t (expr : expression) : structure_item =
   match expr.pexp_desc with
@@ -69,20 +70,20 @@ let eval_fun_of_payload ~loc ~attrs t : payload -> structure_item = function
 
 let impl (strs : structure_item list) : structure_item list =
   (* TODO: take care module doc *)
-  let _doc =
-    List.find_map
-      (fun str ->
-        match str.pstr_desc with
-        | Pstr_attribute
-            {
-              attr_name = { txt = "ocaml.text"; loc = _ };
-              attr_payload = PStr [ { pstr_desc = Pstr_eval (expr, _); _ } ];
-              _;
-            } ->
-            Some expr
-        | _ -> None)
-      strs
-  in
+  (* let _doc =
+       List.find_map
+         (fun str ->
+           match str.pstr_desc with
+           | Pstr_attribute
+               {
+                 attr_name = { txt = "ocaml.text"; loc = _ };
+                 attr_payload = PStr [ { pstr_desc = Pstr_eval (expr, _); _ } ];
+                 _;
+               } ->
+               Some expr
+           | _ -> None)
+         strs
+     in *)
   List.filter_map
     (fun str ->
       let loc = str.pstr_loc in

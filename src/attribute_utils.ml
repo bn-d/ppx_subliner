@@ -25,8 +25,7 @@ module Cmd_info = struct
 
   let to_args ~(default_name_expr : expression) (attrs : attributes) :
       (arg_label * expression) list =
-    (* get the positional argument first *)
-    (* TODO: name doesn't need to be first *)
+    (* get arguments that require special handling *)
     let name_arg =
       let expr =
         get_expr "name" attrs |> Option.value ~default:default_name_expr
