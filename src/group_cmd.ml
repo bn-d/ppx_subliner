@@ -1,20 +1,11 @@
 open Ppxlib
 
+let gen_gcmds_fun_name_str = Printf.sprintf "make_%s_cmdliner_group_cmds"
+
 let gen_gcmds_fun_name { txt = name; loc } =
-  { txt = Printf.sprintf "make_%s_cmdliner_group_cmds" name; loc }
+  { txt = gen_gcmds_fun_name_str name; loc }
 
-(*let gen_eval_fun_name { txt = name; loc } =
-  { txt = Printf.sprintf "%s_cmdliner_eval" name; loc }*)
-
-let gen_term_name_str name = Printf.sprintf "%s_cmdliner_term" name
-
-let map_lid_name f { txt; loc } =
-  let rec impl = function
-    | Lident str -> Lident (f str)
-    | Ldot (t, str) -> Ldot (impl t, str)
-    | _ -> Location.raise_errorf ~loc "Lapply of Longident is not supported"
-  in
-  { txt = impl txt; loc }
+let gen_term_name_str = Printf.sprintf "%s_cmdliner_term"
 
 let term_expr_of_const_args ~loc (const_args : constructor_arguments) :
     expression =
@@ -25,7 +16,9 @@ let term_expr_of_const_args ~loc (const_args : constructor_arguments) :
       | Pcstr_tuple [ ct ] -> (
           match ct.ptyp_desc with
           | Ptyp_constr (lid, []) ->
-              lid |> map_lid_name gen_term_name_str |> Ast_helper.Exp.ident
+              lid
+              |> Utils.map_lid_name gen_term_name_str
+              |> Ast_helper.Exp.ident
           | _ -> Location.raise_errorf "constructor argument is not supported")
       | Pcstr_tuple _ ->
           Location.raise_errorf "constructor cannot have more than 1 arguments"
@@ -69,10 +62,10 @@ let cmd_vb_expr_of_const_decls
             Cmdliner.(Cmd.v info Term.(const f $ [%e term_expr] ()))]
         in
         Ast_helper.Vb.mk pat expr
-      and ident_expr =
+      and var_expr =
         var_name |> Utils.longident_loc_of_name |> Ast_helper.Exp.ident
       in
-      (vb, ident_expr))
+      (vb, var_expr))
 
 let fun_core_type_of_type_name ~loc name =
   let lid = Utils.longident_loc_of_name name in

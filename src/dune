@@ -1,6 +1,6 @@
 (library
  (public_name ppx_subliner)
- (kind ppx_deriver)
+ (kind ppx_rewriter)
  (preprocess
   (pps ppxlib.metaquot))
  (libraries ppxlib)

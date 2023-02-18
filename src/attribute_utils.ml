@@ -16,21 +16,23 @@ let get_expr name (attrs : attributes) =
 
 module Cmd_info = struct
   let is_relevant = function
-    | "version" | "deprecated" | "docs" | "sdocs" -> true
+    (* TODO: deprecated_ support *)
+    | "version" | "deprecated" | "docs" | "sdocs" | "exits" | "envs" | "man"
+    | "man_xrefs" ->
+        true
     (* name and doc will be handled separately *)
-    (* TODO: exits envs man man_xrefs *)
     | "name" | "doc" | "ocaml.doc" | _ -> false
 
   let to_args ~(default_name_expr : expression) (attrs : attributes) :
       (arg_label * expression) list =
     (* get the positional argument first *)
+    (* TODO: name doesn't need to be first *)
     let name_arg =
       let expr =
         get_expr "name" attrs |> Option.value ~default:default_name_expr
       in
       [ (Nolabel, expr) ]
-    in
-    let doc_arg =
+    and doc_arg =
       get_expr "doc" attrs
       |> (function Some e -> Some e | None -> get_expr "ocaml.doc" attrs)
       |> function Some e -> [ (Labelled "doc", e) ] | None -> []
