@@ -15,3 +15,10 @@
  (preprocess
   (pps ppx_deriving_cmdliner ppx_subliner))
  (libraries greet))
+
+(executable
+ (name greet_subliner_term)
+ (modules greet_subliner_term)
+ (preprocess
+  (pps ppx_deriving_cmdliner ppx_subliner))
+ (libraries greet))

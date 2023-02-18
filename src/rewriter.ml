@@ -42,13 +42,12 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
           Attribute_utils.Cmd_info.to_args ~default_name_expr attrs
         in
         Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
-      and term_expr =
+      and  params_term_expr =
         lid |> Utils.map_lid_name Term.gen_name_str |> Ast_helper.Exp.ident
       in
       [%expr
-        let info : Cmdliner.Cmd.info = [%e cmd_info_expr]
-        and term = [%e term_expr] in
-        Cmdliner.Cmd.v info term]
+        let info : Cmdliner.Cmd.info = [%e cmd_info_expr] in
+        Cmdliner.(Cmd.v info Term.(const [%e func_expr] $ [%e params_term_expr] ()))]
 
 let eval_fun_of_expr ~loc ~attrs t (expr : expression) : structure_item =
   match expr.pexp_desc with
