@@ -11,5 +11,6 @@ let greet = function
 
 [%%subliner.cmds
 eval.params <- greet]
+[@@name "greet"]
 [@@version "3.14"]
 (** Greet in different languages! *)
