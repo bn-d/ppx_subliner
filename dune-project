@@ -17,5 +17,5 @@
  (depends
   (ppxlib (>= 0.10.0))
   (cmdliner (>= 1.0.0))
-  (ounit2 :with-test)
+  (alcotest :with-test)
   (ppx_deriving_cmdliner :with-test)))

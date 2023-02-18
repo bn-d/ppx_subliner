@@ -3,19 +3,39 @@ open Ppxlib
 let gen_name_str = Printf.sprintf "make_%s_cmdliner_group_cmds"
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
-let term_expr_of_const_args ~loc (const_args : constructor_arguments) :
-    expression =
+let handle_params_term_expr_of_const_args
+    ~loc
+    func_expr
+    (cd : constructor_declaration) : expression * expression =
   Ast_helper.with_default_loc loc (fun () ->
-      match const_args with
-      (* TODO: support enum *)
-      | Pcstr_tuple [] -> failwith "not implemented"
-      | Pcstr_tuple [ ct ] -> (
-          match ct.ptyp_desc with
-          | Ptyp_constr (lid, []) ->
-              lid
-              |> Utils.map_lid_name Term.gen_name_str
-              |> Ast_helper.Exp.ident
-          | _ -> Location.raise_errorf "constructor argument is not supported")
+      match cd.pcd_args with
+      | Pcstr_tuple [] ->
+          let handle_expr =
+            let choice_expr =
+              Ast_helper.Exp.construct
+                (Utils.longident_loc_of_name cd.pcd_name)
+                None
+            in
+            [%expr fun () -> [%e func_expr] [%e choice_expr]]
+          in
+          (handle_expr, [%expr const ()])
+      | Pcstr_tuple [ ct ] ->
+          let handle_expr =
+            let choice_expr =
+              Ast_helper.Exp.construct
+                (Utils.longident_loc_of_name cd.pcd_name)
+                (Some [%expr params])
+            in
+            [%expr fun params -> [%e func_expr] [%e choice_expr]]
+          and param_term_fun_expr =
+            match ct.ptyp_desc with
+            | Ptyp_constr (lid, []) ->
+                lid
+                |> Utils.map_lid_name Term.gen_name_str
+                |> Ast_helper.Exp.ident
+            | _ -> Location.raise_errorf "constructor argument is not supported"
+          in
+          (handle_expr, [%expr [%e param_term_fun_expr] ()])
       | Pcstr_tuple _ ->
           Location.raise_errorf "constructor cannot have more than 1 arguments"
       | Pcstr_record _ ->
@@ -44,18 +64,15 @@ let cmd_vb_expr_of_const_decls
                 cd.pcd_attributes
             in
             Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
-            (* wrap params inside the current constructor *)
-          and choice_expr =
-            Ast_helper.Exp.construct
-              (Utils.longident_loc_of_name cd.pcd_name)
-              (Some [%expr params])
-            (* 'a Term.t *)
-          and term_expr = term_expr_of_const_args ~loc cd.pcd_args in
+            (* 'params Term.t *)
+          and handle_expr, params_term_expr =
+            handle_params_term_expr_of_const_args ~loc func_expr cd
+          in
 
           [%expr
             let info : Cmdliner.Cmd.info = [%e cmd_info_expr]
-            and f params = [%e func_expr] [%e choice_expr] in
-            Cmdliner.(Cmd.v info Term.(const f $ [%e term_expr] ()))]
+            and handle = [%e handle_expr] in
+            Cmdliner.(Cmd.v info Term.(const handle $ [%e params_term_expr]))]
         in
         Ast_helper.Vb.mk pat expr
       and var_expr =
