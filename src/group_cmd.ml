@@ -1,11 +1,7 @@
 open Ppxlib
 
-let gen_gcmds_fun_name_str = Printf.sprintf "make_%s_cmdliner_group_cmds"
-
-let gen_gcmds_fun_name { txt = name; loc } =
-  { txt = gen_gcmds_fun_name_str name; loc }
-
-let gen_term_name_str = Printf.sprintf "%s_cmdliner_term"
+let gen_name_str = Printf.sprintf "make_%s_cmdliner_group_cmds"
+let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
 let term_expr_of_const_args ~loc (const_args : constructor_arguments) :
     expression =
@@ -17,7 +13,7 @@ let term_expr_of_const_args ~loc (const_args : constructor_arguments) :
           match ct.ptyp_desc with
           | Ptyp_constr (lid, []) ->
               lid
-              |> Utils.map_lid_name gen_term_name_str
+              |> Utils.map_lid_name Term.gen_name_str
               |> Ast_helper.Exp.ident
           | _ -> Location.raise_errorf "constructor argument is not supported")
       | Pcstr_tuple _ ->
@@ -74,8 +70,8 @@ let fun_core_type_of_type_name ~loc name =
 
 let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
-      let gcmds_fun =
-        let pat = Ast_helper.Pat.var @@ gen_gcmds_fun_name name
+      let stri =
+        let pat = Ast_helper.Pat.var @@ gen_name name
         and ct = fun_core_type_of_type_name ~loc name
         and func_expr = [%expr func] in
         let cmd_vbs, cmd_exprs =
@@ -83,18 +79,16 @@ let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
         in
 
         let cmd_list_expr = Ast_builder.Default.elist ~loc cmd_exprs in
-        let gcmds_expr =
-          Ast_helper.Exp.let_ Nonrecursive cmd_vbs cmd_list_expr
-        in
-        [%stri let ([%p pat] : [%t ct]) = fun func -> [%e gcmds_expr]]
+        let expr = Ast_helper.Exp.let_ Nonrecursive cmd_vbs cmd_list_expr in
+        [%stri let ([%p pat] : [%t ct]) = fun func -> [%e expr]]
       in
-      [ gcmds_fun ])
+      [ stri ])
 
 let signature_of_const_decls ~loc name (_cds : constructor_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
-      let gcmds_fun =
-        let fun_name = gen_gcmds_fun_name name
+      let sigi =
+        let fun_name = gen_name name
         and ct = fun_core_type_of_type_name ~loc name in
         Ast_helper.Val.mk fun_name ct |> Ast_helper.Sig.value
       in
-      [ gcmds_fun ])
+      [ sigi ])
