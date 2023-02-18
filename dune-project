@@ -12,9 +12,12 @@
 
 (package
  (name ppx_subliner)
- (synopsis "[@@deriving subliner]")
- (description "Ppxlib based [@@deriving] plugin to generate Cmdliner sub-commands")
+ (synopsis "[@@deriving subliner]/[%%subliner]")
+ (description "Ppxlib based [@@deriving] plugin to generate Cmdliner group \
+sub-commands and Ppxlib based rewriter to generate Cmdliner evaluation for \
+command line tools.")
  (depends
   (ppxlib (>= 0.10.0))
   (cmdliner (>= 1.0.0))
-  (ounit2 :with-test)))
+  (alcotest :with-test)
+  (ppx_deriving_cmdliner :with-test)))
