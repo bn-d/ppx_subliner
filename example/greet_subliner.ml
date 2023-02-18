@@ -6,10 +6,10 @@ type params =
 [@@deriving subliner]
 
 let greet = function
-  | English { night; name } -> Greet.english ~night name
-  | Chinese { night; name } -> Greet.chinese ~night name
+  | English { night; name } -> Greet.english ~night name |> Result.ok
+  | Chinese { night; name } -> Greet.chinese ~night name |> Result.ok
 
 [%%subliner.cmds
-eval.params <- greet]
+eval_result.params <- greet]
 [@@version "3.14"]
 (** Greet in different languages! *)
