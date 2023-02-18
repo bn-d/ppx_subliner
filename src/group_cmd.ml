@@ -65,8 +65,8 @@ let cmd_vb_expr_of_const_decls
 
 let fun_core_type_of_type_name ~loc name =
   let lid = Utils.longident_loc_of_name name in
-  let type_ct = Ast_helper.Typ.constr lid [] in
-  [%type: ([%t type_ct] -> 'a) -> 'a Cmdliner.Cmd.t list]
+  let ct = Ast_helper.Typ.constr lid [] in
+  [%type: ([%t ct] -> 'a) -> 'a Cmdliner.Cmd.t list]
 
 let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
