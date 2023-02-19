@@ -89,7 +89,7 @@ let impl (strs : structure_item list) : structure_item list =
       let loc = str.pstr_loc in
       match str.pstr_desc with
       | Pstr_extension (({ txt; loc = _ }, payload), attrs)
-        when String.starts_with ~prefix:"subliner" txt -> (
+        when Utils.string_starts_with ~prefix:"subliner" txt -> (
           match eval_type_of_name txt with
           | Some t -> Some (eval_fun_of_payload ~loc ~attrs t payload)
           | None -> Location.raise_errorf "unknown subliner rewriter name")
