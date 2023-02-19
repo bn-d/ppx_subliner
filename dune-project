@@ -1,6 +1,6 @@
 (lang dune 2.7)
 (name ppx_subliner)
-(version "0.1.0")
+(version "0.1.1")
 
 (generate_opam_files true)
 
@@ -18,6 +18,6 @@ sub-commands and Ppxlib based rewriter to generate Cmdliner evaluation for \
 command line tools.")
  (depends
   (ppxlib (>= 0.10.0))
-  (cmdliner (>= 1.0.0))
+  (cmdliner (>= 1.1.0))
   (alcotest :with-test)
   (ppx_deriving_cmdliner :with-test)))
