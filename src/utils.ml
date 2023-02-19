@@ -3,20 +3,20 @@ open Ppxlib
 (* compatibility *)
 let rec list_find_map f = function
   | [] -> None
-  | x :: l ->
-     begin match f x with
-       | Some _ as result -> result
-       | None -> list_find_map f l
-     end
+  | x :: l -> (
+      match f x with Some _ as result -> result | None -> list_find_map f l)
 
-     let string_starts_with ~prefix s =
-      let len_s = String.length s
-      and len_pre = String.length prefix in
-      let rec aux i =
-        if i = len_pre then true
-        else if String.unsafe_get s i <> String.unsafe_get prefix i then false
-        else aux (i + 1)
-      in len_s >= len_pre && aux 0
+let string_starts_with ~prefix s =
+  let len_s = String.length s and len_pre = String.length prefix in
+  let rec aux i =
+    if i = len_pre then
+      true
+    else if String.unsafe_get s i <> String.unsafe_get prefix i then
+      false
+    else
+      aux (i + 1)
+  in
+  len_s >= len_pre && aux 0
 
 (* Misc. Utils *)
 
