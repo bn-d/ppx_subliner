@@ -6,6 +6,6 @@
 Ppxlib based `[@@deriving]` plugin to generate [Cmdliner](cmdliner) group sub-commands and Ppxlib based rewriter to generate [Cmdliner](cmdliner) evaluation for command line tools.
 
 ## Usage
-Please see the [documentation](https://boni.ng/ppx_make/ppx_subliner/index.html).
+Please see the [documentation](https://boni.ng/ppx_subliner/ppx_subliner/index.html).
 
 [cmdliner]: https://github.com/dbuenzli/cmdliner
