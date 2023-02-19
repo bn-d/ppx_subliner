@@ -5,7 +5,7 @@ let payload_error ~loc =
 
 let get_expr name (attrs : attributes) =
   attrs
-  |> List.find_map (fun (attr : attribute) ->
+  |> Utils.list_find_map (fun (attr : attribute) ->
          if attr.attr_name.txt = name then
            let loc = attr.attr_loc in
            match attr.attr_payload with
