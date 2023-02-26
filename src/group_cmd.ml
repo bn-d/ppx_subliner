@@ -1,6 +1,6 @@
 open Ppxlib
 
-let gen_name_str = Printf.sprintf "make_%s_cmdliner_group_cmds"
+let gen_name_str = Printf.sprintf "%s_cmdliner_group_cmds"
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
 let handle_params_term_expr_of_const_args

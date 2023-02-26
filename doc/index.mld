@@ -1,1 +1,28 @@
 {0 [[@@deriving subliner]]}
+
+Ppxlib based [[@@deriving]] plugin to generate Cmdliner group sub-commands.
+
+{1 Usage}
+
+To use [[@@deriving subliner]], add [(preprocess (pps ppx_subliner))] to the
+library or executable configuration in dune file.
+
+{1 Example}
+
+{[
+  type param =
+    | Cmd_1 of param_1
+    | Cmd_2 of param_1
+    | Cmd_without_param
+  [@@deriving subliner]
+
+  (* the deriver will automatically generate the following function *)
+  val make_params_cmdliner_group_cmds : (params -> 'a) -> 'a Cmdliner.Cmd.t list
+]}
+
+{1 Syntax}
+
+
+
+
+{0 [[%%subliner]]}

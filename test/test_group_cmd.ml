@@ -8,17 +8,17 @@ type simple =
   | Simple_no_arg
 [@@deriving subliner]
 
-let any = Alcotest.testable (fun _ _ -> ()) ( = )
+let t = Alcotest.testable (fun _ _ -> ()) ( = )
 
 let test name expected argv =
   let f () =
     let msg = "actual result is unexpected"
     and cmd =
       let info = Cmdliner.Cmd.info "cmd" in
-      Cmdliner.Cmd.group info (make_simple_cmdliner_group_cmds Fun.id)
+      Cmdliner.Cmd.group info (simple_cmdliner_group_cmds Fun.id)
     in
     match Cmdliner.Cmd.eval_value ~argv cmd with
-    | Ok actual -> Alcotest.(check any) msg expected actual
+    | Ok actual -> Alcotest.(check t) msg expected actual
     | Error _error -> Alcotest.fail "unexpected eval result"
   in
   Alcotest.test_case name `Quick f
