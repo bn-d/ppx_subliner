@@ -1,6 +1,6 @@
 {0 [[@@deriving subliner]]}
 
-Ppxlib based [[@@deriving]] plugin to generate Cmdliner group sub-commands.
+Ppxlib based [[@@deriving]] plugin to generate {{:https://opam.ocaml.org/packages/cmdliner/}Cmdliner} group sub-commands.
 
 {1 Usage}
 
@@ -22,7 +22,48 @@ library or executable configuration in dune file.
 
 {1 Syntax}
 
+{2 Group Sub-commands}
 
+{2 [Cmd.info] Attributes}
 
+{3 [[@name]]}
+
+Set the name of the command. If not provided, the lower case of the constructor
+name will be used (i.e. constructor [My_cmd] will have name ["my_cmd"] by default).
+
+{[
+  type params = My_cmd [@name "my-cmd-name"]
+]}
+
+{3 [[@doc]]}
+
+Set the one line description of the command. If not provided, the doc string
+will be used.
+
+{[
+  type params = My_cmd (** This is a short description of My_cmd. *)
+]}
+
+{3 Other}
+
+[[@version]], [[@deprecated]], [[@docs]], [[@sdocs]], [[@exits]], [[@envs]],
+[[@envs]], [[@man]] and [[@man_xrefs]] are also supported. For their exact usage,
+please refer to the documentation of
+{{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Cmd/index.html#val-info}Cmdliner.Cmd.info}.
 
 {0 [[%%subliner]]}
+
+Ppxlib based rewriter to generate {{:https://opam.ocaml.org/packages/cmdliner/}Cmdliner} evaluation for command line tools.
+
+{1 Usage}
+
+To use [[%%subliner]], add [(preprocess (pps ppx_subliner))] to the
+library or executable configuration in dune file.
+
+{1 Example}
+
+{[
+    [%%subliner.cmds]
+]}
+
+{1 Syntax}
