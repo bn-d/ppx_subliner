@@ -50,3 +50,15 @@ module Cmd_info = struct
     @ doc_arg
     @ name_arg
 end
+
+module Default_term = struct
+  let get : attributes -> expression option =
+    Utils.list_find_map (fun (attr : attribute) ->
+        let loc = attr.attr_loc in
+        if attr.attr_name.txt = "default" then
+          match attr.attr_payload with
+          | PStr [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> Some expr
+          | _ -> payload_error ~loc
+        else
+          None)
+end

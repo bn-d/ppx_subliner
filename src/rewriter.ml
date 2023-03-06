@@ -24,6 +24,10 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
           Attribute_utils.Cmd_info.to_args ~default_name_expr attrs
         in
         Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
+      and default_term_expr =
+        Attribute_utils.Default_term.get attrs
+        |> Option.value
+             ~default:[%expr Cmdliner.Term.(ret (const (`Help (`Auto, None))))]
       and group_cmd_fun_expr =
         lid
         |> Utils.map_lid_name Group_cmds.gen_name_str
@@ -31,7 +35,7 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
       in
       [%expr
         let info : Cmdliner.Cmd.info = [%e cmd_info_expr]
-        and default = Cmdliner.Term.(ret (const (`Help (`Auto, None))))
+        and default = [%e default_term_expr]
         and group_cmd = [%e group_cmd_fun_expr] [%e func_expr] in
         Cmdliner.Cmd.group ~default info group_cmd]
   | Term ->
