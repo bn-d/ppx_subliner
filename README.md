@@ -3,7 +3,7 @@
 [![CI](https://github.com/bn-d/ppx_subliner/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/bn-d/ppx_subliner/actions/workflows/build.yml)
 [![GitHub release status](https://img.shields.io/github/v/release/bn-d/ppx_subliner)](https://github.com/bn-d/ppx_subliner/releases)
 
-`[@@deriving]` plugin to generate [Cmdliner](cmdliner) sub-command groups, and rewriter to generate [Cmdliner](cmdliner) evaluations.
+`[@@deriving]` plugin to generate [Cmdliner](cmdliner) sub-command groups, and ppx rewriter to generate [Cmdliner](cmdliner) evaluations.
 
 ## Installation
 
