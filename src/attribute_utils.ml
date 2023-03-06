@@ -53,7 +53,7 @@ end
 
 module Default_term = struct
   let get : attributes -> expression option =
-    List.find_map (fun (attr : attribute) ->
+    Utils.list_find_map (fun (attr : attribute) ->
         let loc = attr.attr_loc in
         if attr.attr_name.txt = "default" then
           match attr.attr_payload with
