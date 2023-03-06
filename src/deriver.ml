@@ -8,7 +8,7 @@ let structure_of_type_decl ~loc:_ (_rec_flag : rec_flag) (td : type_declaration)
   match td with
   | { ptype_kind = Ptype_variant cds; _ } ->
       (* type t = C of T | ... *)
-      Group_cmd.structure_of_const_decls ~loc name cds
+      Group_cmds.structure_of_const_decls ~loc name cds
   | { ptype_kind = Ptype_record _lds; _ } ->
       (* type t = {l: T; ...} *)
       Utils.unsupported_error ~loc "type declaration of record" name
@@ -22,7 +22,7 @@ let signature_of_type_decl ~loc:_ (_rec_flag : rec_flag) (td : type_declaration)
   match td with
   | { ptype_kind = Ptype_variant cds; _ } ->
       (* type t = C of T | ... *)
-      Group_cmd.signature_of_const_decls ~loc name cds
+      Group_cmds.signature_of_const_decls ~loc name cds
   | { ptype_kind = Ptype_record _lds; _ } ->
       (* type t = {l: T; ...} *)
       Utils.unsupported_error ~loc "type declaration of record" name
