@@ -89,8 +89,9 @@ please refer to the documentation of
 
 {2:default_term_attr Default [Term.t] Attribute}
 
-[[@@default]] can be used to change the command line syntax to parse if no
-sub command is specified. By default, it will show the default help page.
+For sub-command groups, [[@@default]] can be used to change the command line
+syntax to parse if no sub command is specified. By default, it will show the
+default help page.
 
 {[
 let default = Cmdliner.Term.(ret (const (`Error (true, "Some error messages"))))
