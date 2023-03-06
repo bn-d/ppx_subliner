@@ -34,11 +34,14 @@ module Cmd_info = struct
     (* get arguments that require special handling *)
     let name_arg =
       let expr =
-        get_expr "name" attrs |> Option.value ~default:default_name_expr
+        get_expr "subliner.name" attrs
+        |> (function Some e -> Some e | None -> get_expr "name" attrs)
+        |> Option.value ~default:default_name_expr
       in
       [ (Nolabel, expr) ]
     and doc_arg =
-      get_expr "doc" attrs
+      get_expr "subliner.doc" attrs
+      |> (function Some e -> Some e | None -> get_expr "doc" attrs)
       |> (function Some e -> Some e | None -> get_expr "ocaml.doc" attrs)
       |> function Some e -> [ (Labelled "doc", e) ] | None -> []
     in
