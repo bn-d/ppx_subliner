@@ -61,6 +61,8 @@ can be used and optional parameters can be applied.
 
 {2:cmd_info_attr [Cmd.info] Attributes}
 
+Attributes may be prefixed with [subliner.] to avoid conflicts with other extensions.
+
 {3 [[@name]]}
 
 Set the name of the command. If not provided, the lower case of the constructor
