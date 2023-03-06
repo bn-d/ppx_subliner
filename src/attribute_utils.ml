@@ -1,12 +1,14 @@
 open Ppxlib
 
+let suffix = "subliner."
+
 let payload_error ~loc =
   Location.raise_errorf ~loc "payload of this attribute of is not supported"
 
 let get_expr name (attrs : attributes) =
   attrs
   |> Utils.list_find_map (fun (attr : attribute) ->
-         if attr.attr_name.txt = name then
+         if attr.attr_name.txt = name || attr.attr_name.txt = suffix ^ name then
            let loc = attr.attr_loc in
            match attr.attr_payload with
            | PStr [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> Some expr
@@ -32,14 +34,11 @@ module Cmd_info = struct
     (* get arguments that require special handling *)
     let name_arg =
       let expr =
-        get_expr "subliner.name" attrs
-        |> (function Some e -> Some e | None -> get_expr "name" attrs)
-        |> Option.value ~default:default_name_expr
+        get_expr "name" attrs |> Option.value ~default:default_name_expr
       in
       [ (Nolabel, expr) ]
     and doc_arg =
-      get_expr "subliner.doc" attrs
-      |> (function Some e -> Some e | None -> get_expr "doc" attrs)
+      get_expr "doc" attrs
       |> (function Some e -> Some e | None -> get_expr "ocaml.doc" attrs)
       |> function Some e -> [ (Labelled "doc", e) ] | None -> []
     in
@@ -58,16 +57,5 @@ module Cmd_info = struct
 end
 
 module Default_term = struct
-  let get : attributes -> expression option =
-    Utils.list_find_map (fun (attr : attribute) ->
-        let loc = attr.attr_loc in
-        if
-          attr.attr_name.txt = "default"
-          || attr.attr_name.txt = "subliner.default"
-        then
-          match attr.attr_payload with
-          | PStr [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> Some expr
-          | _ -> payload_error ~loc
-        else
-          None)
+  let get : attributes -> expression option = get_expr "default"
 end
