@@ -25,7 +25,9 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
         in
         Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
       and group_cmd_fun_expr =
-        lid |> Utils.map_lid_name Group_cmd.gen_name_str |> Ast_helper.Exp.ident
+        lid
+        |> Utils.map_lid_name Group_cmds.gen_name_str
+        |> Ast_helper.Exp.ident
       in
       [%expr
         let info : Cmdliner.Cmd.info = [%e cmd_info_expr]
