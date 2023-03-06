@@ -16,7 +16,6 @@ let get_expr name (attrs : attributes) =
 
 module Cmd_info = struct
   let to_args_label = function
-    (* TODO: deprecated_ support *)
     | "version" | "subliner.version" -> Some "version"
     | "deprecated" | "subliner.deprecated" | "deprecated_" -> Some "deprecated"
     | "docs" | "subliner.docs" -> Some "docs"
