@@ -3,6 +3,12 @@
  (modules greet))
 
 (executable
+ (name foobar)
+ (modules foobar)
+ (preprocess
+  (pps ppx_deriving_cmdliner ppx_subliner)))
+
+(executable
  (name greet_cmdliner)
  (modules greet_cmdliner)
  (preprocess

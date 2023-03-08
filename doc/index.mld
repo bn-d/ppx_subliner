@@ -45,18 +45,18 @@ evaluation. The extension can be tagged with {!cmd_info_attr} and {!default_term
 to modify the behavior the command line tool.
 
 {[
-let handle_params = function
-  | Foo f -> handle_foo f
-  | Bar -> handle_bar ()
+let handle = function
+  | Foo { my_arg } -> print_endline ("Foo " ^ my_arg)
+  | Bar -> print_endline "Bar"
 
-[%%subliner.cmds eval.params <- handle_params]
+[%%subliner.cmds eval.params <- handle]
 ]}
 
 Different {{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Cmd/index.html#eval}evaluation function}
 can be used and optional parameters can be applied.
 
 {[
-[%%subliner.cmds (eval_result ~catch:false).params <- handle_params_result]
+[%%subliner.cmds (eval_result ~catch:false).params <- handle_result]
 ]}
 
 {2:cmd_info_attr [Cmd.info] Attributes}
