@@ -37,9 +37,9 @@ let make_type_decl_generator f =
 let longident_loc_of_name { txt; loc } = { txt = Lident txt; loc }
 
 let map_lid_name f { txt; loc } =
-  let rec impl = function
+  let impl = function
     | Lident str -> Lident (f str)
-    | Ldot (t, str) -> Ldot (impl t, str)
+    | Ldot (t, str) -> Ldot (t, f str)
     | _ -> Location.raise_errorf ~loc "Lapply of Longident is not supported"
   in
   { txt = impl txt; loc }
