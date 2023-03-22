@@ -1,9 +1,14 @@
 type cmdliner_a = { a : string [@pos 0] } [@@deriving cmdliner]
-type cmdliner_b = { b : string } [@@deriving cmdliner]
+type t = { ts : string } [@@deriving cmdliner]
+
+module M = struct
+  type m = { m : int} [@@deriving cmdliner]
+end
 
 type simple =
   | Simple_a of cmdliner_a
-  | Simple_b of cmdliner_b
+  | Simple_t of t (** cmdliner has special naming rule for type t *)
+  | Simple_m of M.m
   | Simple_name_attr of cmdliner_a [@name "override-name"]
   | Simple_no_arg
 [@@deriving subliner]
@@ -29,8 +34,11 @@ let test_set =
       (`Ok (Simple_a { a = "test-str-a" }))
       [| "cmd"; "simple_a"; "test-str-a" |];
     test "simple_b"
-      (`Ok (Simple_b { b = "test-str-b" }))
-      [| "cmd"; "simple_b"; "-b"; "test-str-b" |];
+      (`Ok (Simple_t { ts = "test-str-t" }))
+      [| "cmd"; "simple_t"; "--ts"; "test-str-t" |];
+    test "simple_m"
+      (`Ok (Simple_m { m = 42 }))
+      [| "cmd"; "simple_m"; "-m"; "42" |];
     test "simple_name_attr"
       (`Ok (Simple_name_attr { a = "test-str-c" }))
       [| "cmd"; "override-name"; "test-str-c" |];
