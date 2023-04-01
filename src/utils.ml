@@ -7,11 +7,12 @@ let rec list_find_map f = function
       match f x with Some _ as result -> result | None -> list_find_map f l)
 
 let string_starts_with ~prefix s =
-  let len_s = String.length s and len_pre = String.length prefix in
+  let open String in
+  let len_s = length s and len_pre = length prefix in
   let rec aux i =
     if i = len_pre then
       true
-    else if String.unsafe_get s i <> String.unsafe_get prefix i then
+    else if unsafe_get s i <> unsafe_get prefix i then
       false
     else
       aux (i + 1)
@@ -20,14 +21,16 @@ let string_starts_with ~prefix s =
 
 (* Misc. Utils *)
 
-let unsupported_error ~loc str { txt; loc = _ } =
-  Location.raise_errorf ~loc "%s %s cannot be derived" str txt
-
 let check_params_empty { txt; loc } params =
   if List.length params == 0 then
     ()
   else
     Location.raise_errorf ~loc "type %s cannot have params" txt
+
+let expression_of_structure (loc, structure) =
+  match structure with
+  | [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> expr
+  | _ -> Error.attribute_payload ~loc
 
 let make_type_decl_generator f =
   Deriving.Generator.V2.make_noarg (fun ~ctxt (rec_flag, tds) ->

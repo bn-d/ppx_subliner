@@ -2,6 +2,6 @@
  (public_name ppx_subliner)
  (kind ppx_rewriter)
  (preprocess
-  (pps ppxlib.metaquot))
+  (pps ppxlib.metaquot ppx_make))
  (libraries ppxlib)
  (ppx_runtime_libraries cmdliner))

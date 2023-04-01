@@ -8,7 +8,7 @@ let gen_name_str = function
 
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
-let handle_params_term_expr_of_const_args
+let handle_params_term_expr_of_const_decl
     ~loc
     func_expr
     (cd : constructor_declaration) : expression * expression =
@@ -46,7 +46,7 @@ let handle_params_term_expr_of_const_args
       | Pcstr_record _ ->
           Location.raise_errorf "inline record is currently not supported")
 
-let cmd_vb_expr_of_const_decls
+let cmd_vb_expr_of_const_decl
     (func_expr : expression)
     (cd : constructor_declaration) =
   let loc = cd.pcd_loc in
@@ -71,7 +71,7 @@ let cmd_vb_expr_of_const_decls
             Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
             (* ('params -> 'result) * 'params Term.t *)
           and handle_expr, params_term_expr =
-            handle_params_term_expr_of_const_args ~loc func_expr cd
+            handle_params_term_expr_of_const_decl ~loc func_expr cd
           in
           [%expr
             let info : Cmdliner.Cmd.info = [%e cmd_info_expr]
@@ -85,11 +85,12 @@ let cmd_vb_expr_of_const_decls
       (vb, var_expr))
 
 let core_type_of_type_name ~loc name =
-  let ct =
-    let lid = Utils.longident_loc_of_name name in
-    Ast_helper.Typ.constr lid []
-  in
-  [%type: ([%t ct] -> 'a) -> 'a Cmdliner.Cmd.t list]
+  Ast_helper.with_default_loc loc (fun () ->
+      let ct =
+        let lid = Utils.longident_loc_of_name name in
+        Ast_helper.Typ.constr lid []
+      in
+      [%type: ([%t ct] -> 'a) -> 'a Cmdliner.Cmd.t list])
 
 let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
@@ -99,7 +100,7 @@ let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
         and expr =
           let cmd_vbs, cmd_exprs =
             cds
-            |> List.map (cmd_vb_expr_of_const_decls [%expr func])
+            |> List.map (cmd_vb_expr_of_const_decl [%expr func])
             |> List.split
           in
           let cmd_list_expr = Ast_builder.Default.elist ~loc cmd_exprs in
