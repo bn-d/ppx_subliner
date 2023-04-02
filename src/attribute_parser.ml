@@ -6,8 +6,6 @@ let prefix_len = String.length prefix
 type 'a level = Derived of 'a | General of 'a | Prefixed of 'a
 
 module Level = struct
-  type 'a t = 'a level
-
   let join level_opt level =
     match (level_opt, level) with
     | None, _
@@ -141,6 +139,7 @@ module Term = struct
       ]
     in
     match name with
+    | "ocaml.doc" -> Some (Derived "doc")
     | "deprecated_" -> Some (General "deprecated")
     | "subliner.deprecated_" -> Some (Prefixed "deprecated")
     | _ when List.exists (( = ) name) valid -> Some (General name)

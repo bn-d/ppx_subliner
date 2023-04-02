@@ -1,5 +1,5 @@
 (test
  (name test_subliner)
  (preprocess
-  (pps ppx_subliner ppx_deriving_cmdliner))
- (libraries alcotest))
+  (pps ppx_subliner ppx_deriving_cmdliner ppxlib.metaquot))
+ (libraries ppx_subliner alcotest ppxlib))

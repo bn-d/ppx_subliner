@@ -25,7 +25,7 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
         in
         Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
       and default_term_expr =
-      Attribute_parser.Default_term.get attrs
+        Attribute_parser.Default_term.get attrs
         |> Option.value
              ~default:[%expr Cmdliner.Term.(ret (const (`Help (`Auto, None))))]
       and group_cmd_fun_expr =
