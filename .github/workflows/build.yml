@@ -45,4 +45,5 @@ jobs:
           PULL_REQUEST_NUMBER: ${{ github.event.number }}
         run: |
           opam exec -- dune runtest --instrument-with bisect_ppx --force
+          opam exec -- bisect-ppx-report summary
           opam exec -- bisect-ppx-report send-to Coveralls
