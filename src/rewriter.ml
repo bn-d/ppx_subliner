@@ -76,20 +76,6 @@ let eval_fun_of_payload ~loc ~attrs t : payload -> structure_item = function
 
 let impl (strs : structure_item list) : structure_item list =
   (* TODO: take care module doc *)
-  (* let _doc =
-       List.find_map
-         (fun str ->
-           match str.pstr_desc with
-           | Pstr_attribute
-               {
-                 attr_name = { txt = "ocaml.text"; loc = _ };
-                 attr_payload = PStr [ { pstr_desc = Pstr_eval (expr, _); _ } ];
-                 _;
-               } ->
-               Some expr
-           | _ -> None)
-         strs
-     in *)
   List.filter_map
     (fun str ->
       let loc = str.pstr_loc in

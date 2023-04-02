@@ -8,33 +8,118 @@ let gen_name_str = function
 
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
-module T = struct
-  type positional_type =
-    | Pos of int
-    | Pos_all
-    | Pos_left of int
-    | Pos_right of int
+module Conv = struct
+  type basic =
+    | Bool
+    | Char
+    | Int
+    | Nativeint
+    | Int32
+    | Int64
+    | Float
+    | String
+    | File
+    | Dir
+    | Non_dir_file
+  (* TODO: support Pair | T3 | T4 *)
 
-  type arg_type = Optional | Required | Non_empty | Last
+  type complex =
+    | Value of basic
+    | Option of basic
+    | List of (expression option * basic)
+    | Array of (expression option * basic)
 
-  type info = {
-    deprecated_ : expression option;
+  type t = Location.t * complex
+
+  let basic_of_core_type (ct : core_type) : basic =
+    match ct.ptyp_desc with
+    | Ptyp_constr ({ txt = Lident "bool"; _ }, [])
+    | Ptyp_constr ({ txt = Ldot (Lident "Bool", "t"); _ }, []) ->
+        Bool
+    | Ptyp_constr ({ txt = Lident "char"; _ }, [])
+    | Ptyp_constr ({ txt = Ldot (Lident "Char", "t"); _ }, []) ->
+        Char
+    | Ptyp_constr ({ txt = Lident "int"; _ }, [])
+    | Ptyp_constr ({ txt = Ldot (Lident "Int", "t"); _ }, []) ->
+        Int
+    | Ptyp_constr ({ txt = Lident "nativeint"; _ }, [])
+    | Ptyp_constr ({ txt = Ldot (Lident "Nativeint", "t"); _ }, []) ->
+        Nativeint
+    | Ptyp_constr ({ txt = Lident "int32"; _ }, [])
+    | Ptyp_constr ({ txt = Ldot (Lident "Int32", "t"); _ }, []) ->
+        Int32
+    | Ptyp_constr ({ txt = Lident "int64"; _ }, [])
+    | Ptyp_constr ({ txt = Ldot (Lident "Int64", "t"); _ }, []) ->
+        Int64
+    | Ptyp_constr ({ txt = Lident "float"; _ }, [])
+    | Ptyp_constr ({ txt = Ldot (Lident "Float", "t"); _ }, []) ->
+        Float
+    | Ptyp_constr ({ txt = Lident "string"; _ }, [])
+    | Ptyp_constr ({ txt = Ldot (Lident "String", "t"); _ }, []) ->
+        String
+    | _ -> Error.field_type ~loc:ct.ptyp_loc
+
+  let of_core_type (ct : core_type) : t =
+    let loc = ct.ptyp_loc in
+    match ct.ptyp_desc with
+    | Ptyp_constr (_, []) -> (loc, Value (basic_of_core_type ct))
+    | Ptyp_constr ({ txt = Lident "option"; _ }, [ ct ])
+    | Ptyp_constr ({ txt = Ldot (Lident "Option", "t"); _ }, [ ct ]) ->
+        (loc, Option (basic_of_core_type ct))
+    | Ptyp_constr ({ txt = Lident "list"; _ }, [ ct ])
+    | Ptyp_constr ({ txt = Ldot (Lident "List", "t"); _ }, [ ct ]) ->
+        (loc, List (None, basic_of_core_type ct))
+    | Ptyp_constr ({ txt = Lident "array"; _ }, [ ct ])
+    | Ptyp_constr ({ txt = Ldot (Lident "Array", "t"); _ }, [ ct ]) ->
+        (loc, Array (None, basic_of_core_type ct))
+    (* TODO: add support for custom conv *)
+    | _ -> Location.raise_errorf ~loc:ct.ptyp_loc "type is not supported"
+
+  let basic_to_expr ~loc : basic -> expression = function
+    | Bool -> [%expr Cmdliner.Arg.bool]
+    | Char -> [%expr Cmdliner.Arg.char]
+    | Int -> [%expr Cmdliner.Arg.int]
+    | Nativeint -> [%expr Cmdliner.Arg.nativeint]
+    | Int32 -> [%expr Cmdliner.Arg.int32]
+    | Int64 -> [%expr Cmdliner.Arg.int64]
+    | Float -> [%expr Cmdliner.Arg.float]
+    | String -> [%expr Cmdliner.Arg.string]
+    | File -> [%expr Cmdliner.Arg.file]
+    | Dir -> [%expr Cmdliner.Arg.dir]
+    | Non_dir_file -> [%expr Cmdliner.Arg.non_dir_file]
+
+  let to_expr ((loc, complex) : t) : expression =
+    Ast_helper.with_default_loc loc (fun () ->
+        match complex with
+        | Value basic -> basic_to_expr ~loc basic
+        | Option basic -> basic_to_expr ~loc basic
+        | List (sep_expr, basic) ->
+            let sep_expr = Option.value ~default:[%expr ','] sep_expr
+            and basic_expr = basic_to_expr ~loc basic in
+            [%expr Cmdliner.Arg.list ~sep:[%e sep_expr] [%e basic_expr]]
+        | Array (sep_expr, basic) ->
+            let sep_expr = Option.value ~default:[%expr ','] sep_expr
+            and basic_expr = basic_to_expr ~loc basic in
+            [%expr Cmdliner.Arg.array ~sep:[%e sep_expr] [%e basic_expr]])
+end
+
+type term_attr = (location * structure) Attribute_utils.Term.t
+type list_flag = Non_empty | Last | Optional
+
+module Info = struct
+  type t = {
+    deprecated : expression option;
     absent : expression option;
-    doc : expression option;
     docs : expression option;
     docv : expression option;
+    doc : expression option;
     env : expression option;
   }
 
-  type named_arg = { type_ : arg_type; name : string; info : info }
-  type positional_arg = { type_ : positional_type; info : info }
-  type t = Named of named_arg | Positional of positional_arg
-  type term_attr = (location * structure) Attribute_utils.Term.t
-
-  let info_of_term_attr (term_attr : term_attr) : info =
+  let of_term_attr (term_attr : term_attr) : t =
     let f = Option.map Utils.expression_of_structure in
     {
-      deprecated_ = f term_attr.deprecated_;
+      deprecated = f term_attr.deprecated;
       absent = f term_attr.absent;
       doc = f term_attr.doc;
       docs = f term_attr.docs;
@@ -42,11 +127,90 @@ module T = struct
       env = f term_attr.env;
     }
 
-  let named_of_term_attr ~loc name ct (term_attr : term_attr) =
+  let to_expr
+      ~loc
+      (names_expr : expression)
+      ({ deprecated; absent; docs; docv; doc; env } : t) : expression =
+    Ast_helper.with_default_loc loc (fun () ->
+        let args =
+          let labelled =
+            [
+              ("deprecated", deprecated);
+              ("absent", absent);
+              ("docs", docs);
+              ("docv", docv);
+              ("doc", doc);
+              ("env", env);
+            ]
+            |> List.filter_map (fun (name, expr_opt) ->
+                   Option.map (fun expr -> (Labelled name, expr)) expr_opt)
+          and no_label = [ (Nolabel, names_expr) ] in
+          labelled @ no_label
+        in
+        Ast_helper.Exp.apply [%expr Cmdliner.Arg.info] args)
+end
+
+module Named = struct
+  type type_ =
+    | Flag
+    | Flag_all
+    | Opt of { default_expr : expression option; conv : Conv.t }
+    | Opt_all of { default_expr : expression option; conv : Conv.t }
+    | Required of Conv.t
+    | Non_empty
+    | Last of Conv.t
+
+  type t = {
+    type_ : type_;
+    names_expr : expression;
+    conv : Conv.t;
+    info : Info.t;
+  }
+
+  let of_term_attr ~loc name ct (term_attr : term_attr) : t =
+    let conv = Conv.of_core_type ct in
+
     let type_ = failwith ""
     and name = failwith ""
     and info = info_of_term_attr term_attr in
     { type_; name; info }
+
+  let to_expr ~loc ({ type_; names_expr; info } : t) =
+    let info_expr = Info.to_expr ~loc names_expr info in
+    let term_expr =
+      match type_ with
+      | Flag -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag info)]
+      | Flag_all -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag_all info)]
+      | Opt { default_expr = None; conv } ->
+          let conv_expr = Conv.to_expr conv in
+          [%expr
+            let conv = [%e conv_expr] in
+            Cmdliner.Arg.value (Cmdliner.Arg.opt conv None info)]
+      (* TODO: this function should not fail *)
+      | _ -> failwith ""
+    in
+    [%expr
+      let info : Cmdliner.Arg.info = [%e info_expr] in
+      [%e term_expr]]
+end
+
+module Positional = struct
+  type t
+end
+
+module T = struct
+  type positional_type =
+    | Pos of int
+    | Pos_all
+    | Pos_left of int
+    | Pos_right of int
+
+  type named_arg = { type_ : arg_type; name : string; info : info }
+  type positional_arg = { type_ : positional_type; info : info }
+  type t = Named of named_arg | Positional of positional_arg
+
+  let positional_of_term_attr ~loc type_ ct (term_attr : term_attr) =
+    failwith ""
 
   let of_term_attr ~loc name ct (term_attr : term_attr) =
     let pos_count =

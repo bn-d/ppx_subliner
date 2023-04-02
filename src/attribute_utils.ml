@@ -64,7 +64,7 @@ let parse_impl
 module Term = struct
   type 'a t = {
     (* info *)
-    deprecated_ : 'a option;
+    deprecated : 'a option;
     absent : 'a option;
     doc : 'a option;
     docs : 'a option;
@@ -79,7 +79,7 @@ module Term = struct
     pos_right : 'a option;
     (* list *)
     non_empty : 'a option;
-    last : 'a option;
+    last : 'a option; (* TODO: support sep, t_sep, file, dir, non_dir_file *)
   }
   [@@deriving make]
 
@@ -88,7 +88,7 @@ module Term = struct
   let map
       f
       {
-        deprecated_;
+        deprecated;
         absent;
         doc;
         docs;
@@ -104,7 +104,7 @@ module Term = struct
       } =
     let f = Option.map f in
     {
-      deprecated_ = f deprecated_;
+      deprecated = f deprecated;
       absent = f absent;
       doc = f doc;
       docs = f docs;
@@ -125,7 +125,7 @@ module Term = struct
   let field_level_of_attr_name { txt = name; loc } =
     let valid =
       [
-        "deprecated_";
+        "deprecated";
         "absent";
         "doc";
         "docs";
@@ -141,8 +141,8 @@ module Term = struct
       ]
     in
     match name with
-    | "deprecated" -> Some (General "deprecated_")
-    | "subliner.deprecated" -> Some (Prefixed "deprecated_")
+    | "deprecated_" -> Some (General "deprecated")
+    | "subliner.deprecated_" -> Some (Prefixed "deprecated")
     | _ when List.exists (( = ) name) valid -> Some (General name)
     | _ when Utils.string_starts_with ~prefix name ->
         let len = String.length name in
@@ -155,7 +155,7 @@ module Term = struct
 
   let update_field ~loc name v t =
     match name with
-    | "deprecated_" -> { t with deprecated_ = Level.join t.deprecated_ v }
+    | "deprecated" -> { t with deprecated = Level.join t.deprecated v }
     | "absent" -> { t with absent = Level.join t.absent v }
     | "doc" -> { t with doc = Level.join t.doc v }
     | "docs" -> { t with docs = Level.join t.docs v }
