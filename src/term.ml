@@ -266,7 +266,7 @@ let term_vb_expr_of_label_decl (ld : label_declaration) =
         let pat = Ast_helper.Pat.var var_name
         and expr =
           ld.pld_attributes
-          |> Attribute_utils.Term.parse
+          |> Attribute_parser.Term.parse
           |> T.of_term_attr
           |> T.to_expr
         in

@@ -18,6 +18,7 @@
  (depends
   (ppxlib (>= 0.10.0))
   (cmdliner (>= 1.1.0))
+  (ppx_make (>= 0.3.0))
   (alcotest :with-test)
   (ppx_deriving_cmdliner :with-test)
   (bisect_ppx :with-test)))
