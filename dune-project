@@ -20,4 +20,4 @@
   (cmdliner (>= 1.1.0))
   (alcotest :with-test)
   (ppx_deriving_cmdliner :with-test)
-  (bisect_ppx :with-dev)))
+  (bisect_ppx :with-test)))
