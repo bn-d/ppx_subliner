@@ -1,5 +1,6 @@
 # ocamlbuild working directory
 _build/
+_coverage/
 
 # Merlin configuring file for Vim and Emacs
 .merlin
