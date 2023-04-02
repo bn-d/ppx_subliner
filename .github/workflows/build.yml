@@ -15,8 +15,8 @@ jobs:
         os:
           - ubuntu-latest
         ocaml-compiler:
-          - 4.08.x
-          - 4.14.x
+          - 4.08.2
+          - 4.14.2
 
     runs-on: ${{ matrix.os }}
 
@@ -37,3 +37,12 @@ jobs:
 
       - name: Test
         run: opam exec -- dune runtest --verbose
+
+      - name: Coverage
+        if: ${{matrix.ocaml == '4.14.2'}}
+        env:
+          COVERALLS_REPO_TOKEN: ${{secrets.COVERALLS_REPO_TOKEN}}
+          PULL_REQUEST_NUMBER: ${{github.event.number}}
+        run: |
+          opam exec -- dune runtest --instrument-with bisect_ppx --force
+          opam exec -- bisect-ppx-report send-to Coveralls
