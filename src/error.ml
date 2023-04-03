@@ -9,4 +9,4 @@ let attribute_name ~loc name =
   Location.raise_errorf ~loc "unexpected attribute name: %s" name
 
 let attribute_payload ~loc =
-  Location.raise_errorf ~loc "payload of this attribute of is not supported"
+  Location.raise_errorf ~loc "unsupported payload for attribute"
