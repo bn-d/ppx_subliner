@@ -21,11 +21,11 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
         let args =
           (* lower case constructor name will be the default cmd name *)
           let default_name_expr = [%expr Filename.basename Sys.argv.(0)] in
-          Attribute_utils.Cmd_info.to_args ~default_name_expr attrs
+          Attribute_parser.Cmd_info.to_args ~default_name_expr attrs
         in
         Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
       and default_term_expr =
-        Attribute_utils.Default_term.get attrs
+        Attribute_parser.Default_term.get attrs
         |> Option.value
              ~default:[%expr Cmdliner.Term.(ret (const (`Help (`Auto, None))))]
       and group_cmd_fun_expr =
@@ -45,7 +45,7 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
         let args =
           (* lower case constructor name will be the default cmd name *)
           let default_name_expr = [%expr Filename.basename Sys.argv.(0)] in
-          Attribute_utils.Cmd_info.to_args ~default_name_expr attrs
+          Attribute_parser.Cmd_info.to_args ~default_name_expr attrs
         in
         Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
       and params_term_expr =
@@ -76,20 +76,6 @@ let eval_fun_of_payload ~loc ~attrs t : payload -> structure_item = function
 
 let impl (strs : structure_item list) : structure_item list =
   (* TODO: take care module doc *)
-  (* let _doc =
-       List.find_map
-         (fun str ->
-           match str.pstr_desc with
-           | Pstr_attribute
-               {
-                 attr_name = { txt = "ocaml.text"; loc = _ };
-                 attr_payload = PStr [ { pstr_desc = Pstr_eval (expr, _); _ } ];
-                 _;
-               } ->
-               Some expr
-           | _ -> None)
-         strs
-     in *)
   List.filter_map
     (fun str ->
       let loc = str.pstr_loc in

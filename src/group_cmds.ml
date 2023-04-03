@@ -65,7 +65,7 @@ let cmd_vb_expr_of_const_decls
               let default_name_expr =
                 Ast_builder.Default.estring ~loc:cd.pcd_name.loc name_str
               in
-              Attribute_utils.Cmd_info.to_args ~default_name_expr
+              Attribute_parser.Cmd_info.to_args ~default_name_expr
                 cd.pcd_attributes
             in
             Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
