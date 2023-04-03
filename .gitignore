@@ -4,6 +4,7 @@ _coverage/
 
 # Merlin configuring file for Vim and Emacs
 .merlin
+*.coverage
 
 # Dune generated files
 *.install

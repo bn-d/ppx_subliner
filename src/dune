@@ -5,4 +5,5 @@
   (pps ppxlib.metaquot ppx_make))
  (libraries ppxlib)
  (ppx_runtime_libraries cmdliner)
- (instrumentation (backend bisect_ppx)))
+ (instrumentation
+  (backend bisect_ppx)))
