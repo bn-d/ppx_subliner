@@ -72,16 +72,9 @@ module Common = struct
 
   let test = Term.test
 
-  let test_raise name (expression : expression) expected =
-    let f () =
-      try
-        let () = T.parse expression.pexp_attributes |> ignore in
-        Alcotest.fail "test expected to fail"
-      with Location.Error error ->
-        let actual = Location.Error.message error in
-        Alcotest.(check string) name expected actual
-    in
-    Alcotest.test_case name `Quick f
+  let test_raises name (expression : expression) expected =
+    Utils.test_raises name expected (fun () ->
+        T.parse expression.pexp_attributes)
 
   let test_set =
     [
@@ -100,9 +93,9 @@ module Common = struct
       test "priority_4" [%expr t [@subliner.doc ""] [@doc]] (fun { doc; _ } ->
           doc |> Option.get |> fun l -> assert (List.length l = 1));
       (* expected failure *)
-      test_raise "invalid_payload" [%expr t [@doc: int]]
+      test_raises "invalid_payload" [%expr t [@doc: int]]
         "unsupported payload for attribute";
-      test_raise "invalid_attr" [%expr t [@subliner.irrelevant]]
+      test_raises "invalid_attr" [%expr t [@subliner.irrelevant]]
         "unexpected attribute name: irrelevant";
     ]
 end

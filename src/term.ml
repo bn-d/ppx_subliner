@@ -73,7 +73,7 @@ module Conv = struct
     | Ptyp_constr ({ txt = Ldot (Lident "Array", "t"); _ }, [ ct ]) ->
         (loc, Array (None, basic_of_core_type ct))
     (* TODO: add support for custom conv *)
-    | _ -> Location.raise_errorf ~loc:ct.ptyp_loc "type is not supported"
+    | _ -> Error.field_type ~loc:ct.ptyp_loc
 
   let basic_to_expr ~loc : basic -> expression = function
     | Bool -> [%expr Cmdliner.Arg.bool]
