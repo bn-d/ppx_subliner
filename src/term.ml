@@ -103,7 +103,7 @@ module Conv = struct
             [%expr Cmdliner.Arg.array ~sep:[%e sep_expr] [%e basic_expr]])
 end
 
-type term_attr = (location * structure) Attribute_utils.Term.t
+type term_attr = (location * structure) Attribute_parser.Term.t
 type list_flag = Non_empty | Last | Optional
 
 module Info = struct
@@ -151,7 +151,7 @@ module Info = struct
 end
 
 module Named = struct
-  type type_ =
+  type category =
     | Flag
     | Flag_all
     | Opt of { default_expr : expression option; conv : Conv.t }
@@ -160,25 +160,20 @@ module Named = struct
     | Non_empty
     | Last of Conv.t
 
-  type t = {
-    type_ : type_;
-    names_expr : expression;
-    conv : Conv.t;
-    info : Info.t;
-  }
+  type t = { category : category; names_expr : expression; info : Info.t }
 
-  let of_term_attr ~loc name ct (term_attr : term_attr) : t =
-    let conv = Conv.of_core_type ct in
+  let of_term_attr ~loc:_ _name ct (term_attr : term_attr) : t =
+    let _conv = Conv.of_core_type ct in
 
-    let type_ = failwith ""
-    and name = failwith ""
-    and info = info_of_term_attr term_attr in
-    { type_; name; info }
+    let category = failwith ""
+    and names_expr = failwith ""
+    and info = Info.of_term_attr term_attr in
+    { category; names_expr; info }
 
-  let to_expr ~loc ({ type_; names_expr; info } : t) =
+  let to_expr ~loc ({ category; names_expr; info } : t) =
     let info_expr = Info.to_expr ~loc names_expr info in
     let term_expr =
-      match type_ with
+      match category with
       | Flag -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag info)]
       | Flag_all -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag_all info)]
       | Opt { default_expr = None; conv } ->
@@ -195,22 +190,12 @@ module Named = struct
 end
 
 module Positional = struct
-  type t
+  type category = Pos of int | Pos_all | Pos_left of int | Pos_right of int
+  type t = { category : category; info : Info.t }
 end
 
 module T = struct
-  type positional_type =
-    | Pos of int
-    | Pos_all
-    | Pos_left of int
-    | Pos_right of int
-
-  type named_arg = { type_ : arg_type; name : string; info : info }
-  type positional_arg = { type_ : positional_type; info : info }
-  type t = Named of named_arg | Positional of positional_arg
-
-  let positional_of_term_attr ~loc type_ ct (term_attr : term_attr) =
-    failwith ""
+  type t = Named of Named.t | Positional of Positional.t
 
   let of_term_attr ~loc name ct (term_attr : term_attr) =
     let pos_count =
@@ -222,7 +207,7 @@ module T = struct
     in
     match pos_count with
     (* named *)
-    | 0 -> Named (named_of_term_attr ~loc name ct term_attr)
+    | 0 -> Named (Named.of_term_attr ~loc name ct term_attr)
     (* positional *)
     | 1 -> failwith ""
     (* multiple pos error *)
@@ -231,7 +216,7 @@ module T = struct
           "only one of [pos|pos_all|pos_left|pos_right] can be specified at \
            the same time"
 
-  let to_expr = failwith ""
+  let to_expr _ = failwith ""
 end
 
 let make_fun_vb_expr_of_label_decls ~loc (lds : label_declaration list) =
