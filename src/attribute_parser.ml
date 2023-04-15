@@ -77,7 +77,7 @@ module Term = struct
     pos_right : 'a option;
     (* list *)
     non_empty : 'a option;
-    last : 'a option; (* TODO: support sep, t_sep, file, dir, non_dir_file *)
+    last : 'a option; (* TODO: support sep, t_sep, file, dir, non_dir_file, default *)
   }
   [@@deriving make]
 

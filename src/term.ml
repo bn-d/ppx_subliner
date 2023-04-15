@@ -150,22 +150,68 @@ module Info = struct
         Ast_helper.Exp.apply [%expr Cmdliner.Arg.info] args)
 end
 
+module Flags = struct
+  type t = {
+    non_empty : bool;
+    last : bool;
+    default : expression option;
+  }
+
+  let of_term_attr ~loc (term_attr : term_attr) : t =
+    let f = Option.fold ~none:false ~some:(function
+    | _, [] -> true | _ -> Location.raise_errorf ~loc "`non_empty` and `last` cannot have any payload") in
+    {
+      non_empty = f term_attr.non_empty;
+      last = f term_attr.last;
+      (* TODO: implement default *)
+      default = None;
+    }
+
+end
+
 module Named = struct
   type category =
     | Flag
     | Flag_all
-    | Opt of { default_expr : expression option; conv : Conv.t }
-    | Opt_all of { default_expr : expression option; conv : Conv.t }
+    | Opt of { default : expression option; conv : Conv.t }
+    | Opt_all of { default : expression option; conv : Conv.t }
     | Required of Conv.t
-    | Non_empty
-    | Last of Conv.t
+    | Non_empty of Conv.t
+    | Non_empty_flag_all
+    | Last of  Conv.t
 
   type t = { category : category; names_expr : expression; info : Info.t }
 
-  let of_term_attr ~loc:_ _name ct (term_attr : term_attr) : t =
-    let _conv = Conv.of_core_type ct in
+  let of_term_attr ~loc _name ct (term_attr : term_attr) : t =
+    let conv = Conv.of_core_type ct and
+    flags = Flags.of_term_attr ~loc term_attr in
 
-    let category = failwith ""
+    let category = match snd conv, flags with
+    (* non empty = true *)
+    | _, {non_empty=true; last=true; _} ->
+      Location.raise_errorf ~loc "`non_empty` and `last` cannot be used at the same time"
+    | _, {non_empty=true; default=Some _; _} ->
+      Location.raise_errorf ~loc "`non_empty` and `default` cannot be used at the same time"
+    | List (None, Bool), {non_empty=true; _} ->
+      Non_empty_flag_all
+    | List (Some _, Bool), {non_empty=true; _} ->
+      Non_empty  conv
+      (* TODO: *)
+    | List _, {non_empty=true; _} -> failwith "figure out how list work"
+    | _,{non_empty=true; _} -> Location.raise_errorf ~loc "`non_empty` can be used with `list`"
+    (* last = true *)
+    | _, {last=true; default=Some _; _} ->
+      Location.raise_errorf ~loc "`last` and `default` cannot be used at the same time"
+    | _, {last=true;_} -> Last conv
+    (* bool *)
+    | Value Bool, {default = Some _;_ }
+      | List (None, Bool), {default = Some _;_ } ->
+      Location.raise_errorf ~loc "`default` cannot be used with `bool`"
+    | Value Bool, _ -> Flag
+    | List (None, Bool), _ -> Flag_all
+    | List (Some _, _), {default; _} -> Opt {default; conv}
+
+    | _ -> failwith ""
     and names_expr = failwith ""
     and info = Info.of_term_attr term_attr in
     { category; names_expr; info }
@@ -192,6 +238,9 @@ end
 module Positional = struct
   type category = Pos of int | Pos_all | Pos_left of int | Pos_right of int
   type t = { category : category; info : Info.t }
+
+  let of_term_attr ~loc:_ _name _ct (_term_attr : term_attr) : t = failwith ""
+  let to_expr ~loc:_ (_ : t) = failwith ""
 end
 
 module T = struct
@@ -209,14 +258,16 @@ module T = struct
     (* named *)
     | 0 -> Named (Named.of_term_attr ~loc name ct term_attr)
     (* positional *)
-    | 1 -> failwith ""
+    | 1 -> Positional (Positional.of_term_attr ~loc name ct term_attr)
     (* multiple pos error *)
     | _ ->
         Location.raise_errorf ~loc
           "only one of [pos|pos_all|pos_left|pos_right] can be specified at \
            the same time"
 
-  let to_expr _ = failwith ""
+  let to_expr : t -> expression = function
+  | Named v -> Named.to_expr v
+  | Positional v -> Positional.to_expr v
 end
 
 let make_fun_vb_expr_of_label_decls ~loc (lds : label_declaration list) =
