@@ -8,7 +8,7 @@ module Term : sig
     docv : 'a option;
     env : 'a option;
     (* named *)
-    name : 'a option;
+    names : 'a option;
     (* positional *)
     pos : 'a option;
     pos_all : 'a option;

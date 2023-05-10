@@ -24,10 +24,10 @@ module Conv = struct
   (* TODO: support Pair | T3 | T4 *)
 
   type complex =
-    | Value of basic
+    | Basic of basic
     | Option of basic
-    | List of (expression option * basic)
-    | Array of (expression option * basic)
+    | List of { sep_expr : expression option; basic : basic }
+    | Array of { sep_expr : expression option; basic : basic }
 
   type t = Location.t * complex
 
@@ -62,16 +62,16 @@ module Conv = struct
   let of_core_type (ct : core_type) : t =
     let loc = ct.ptyp_loc in
     match ct.ptyp_desc with
-    | Ptyp_constr (_, []) -> (loc, Value (basic_of_core_type ct))
+    | Ptyp_constr (_, []) -> (loc, Basic (basic_of_core_type ct))
     | Ptyp_constr ({ txt = Lident "option"; _ }, [ ct ])
     | Ptyp_constr ({ txt = Ldot (Lident "Option", "t"); _ }, [ ct ]) ->
         (loc, Option (basic_of_core_type ct))
     | Ptyp_constr ({ txt = Lident "list"; _ }, [ ct ])
     | Ptyp_constr ({ txt = Ldot (Lident "List", "t"); _ }, [ ct ]) ->
-        (loc, List (None, basic_of_core_type ct))
+        (loc, List { sep_expr = None; basic = basic_of_core_type ct })
     | Ptyp_constr ({ txt = Lident "array"; _ }, [ ct ])
     | Ptyp_constr ({ txt = Ldot (Lident "Array", "t"); _ }, [ ct ]) ->
-        (loc, Array (None, basic_of_core_type ct))
+        (loc, Array { sep_expr = None; basic = basic_of_core_type ct })
     (* TODO: add support for custom conv *)
     | _ -> Error.field_type ~loc:ct.ptyp_loc
 
@@ -91,20 +91,21 @@ module Conv = struct
   let to_expr ((loc, complex) : t) : expression =
     Ast_helper.with_default_loc loc (fun () ->
         match complex with
-        | Value basic -> basic_to_expr ~loc basic
-        | Option basic -> basic_to_expr ~loc basic
-        | List (sep_expr, basic) ->
+        | Basic basic -> basic_to_expr ~loc basic
+        | Option basic ->
+            let basic_expr = basic_to_expr ~loc basic in
+            [%expr Cmdliner.Arg.some [%e basic_expr]]
+        | List { sep_expr; basic } ->
             let sep_expr = Option.value ~default:[%expr ','] sep_expr
             and basic_expr = basic_to_expr ~loc basic in
             [%expr Cmdliner.Arg.list ~sep:[%e sep_expr] [%e basic_expr]]
-        | Array (sep_expr, basic) ->
+        | Array { sep_expr; basic } ->
             let sep_expr = Option.value ~default:[%expr ','] sep_expr
             and basic_expr = basic_to_expr ~loc basic in
             [%expr Cmdliner.Arg.array ~sep:[%e sep_expr] [%e basic_expr]])
 end
 
 type term_attr = (location * structure) Attribute_parser.Term.t
-type list_flag = Non_empty | Last | Optional
 
 module Info = struct
   type t = {
@@ -150,69 +151,96 @@ module Info = struct
         Ast_helper.Exp.apply [%expr Cmdliner.Arg.info] args)
 end
 
-module Flags = struct
-  type t = {
-    non_empty : bool;
-    last : bool;
-    default : expression option;
-  }
+module As_term = struct
+  (* of default_expression option *)
+  type t = Value of expression option | Non_empty | Last of expression option
 
   let of_term_attr ~loc (term_attr : term_attr) : t =
-    let f = Option.fold ~none:false ~some:(function
-    | _, [] -> true | _ -> Location.raise_errorf ~loc "`non_empty` and `last` cannot have any payload") in
-    {
-      non_empty = f term_attr.non_empty;
-      last = f term_attr.last;
-      (* TODO: implement default *)
-      default = None;
-    }
-
+    let f =
+      Option.fold ~none:false ~some:(function
+        | _, [] -> true
+        | _ ->
+            Location.raise_errorf ~loc
+              "`non_empty` and `last` cannot have any payload")
+    in
+    let non_empty = f term_attr.non_empty
+    and last = f term_attr.last
+    and (* TODO: implement default *)
+        default = None in
+    match (non_empty, last, default) with
+    | true, false, None -> Non_empty
+    | true, true, _ ->
+        Location.raise_errorf ~loc
+          "`non_empty` and `last` cannot be used at the same time"
+    | true, _, Some _ ->
+        Location.raise_errorf ~loc
+          "`non_empty` and `default` cannot be used at the same time"
+    | false, true, _ -> Last default
+    | false, false, _ -> Value default
 end
 
 module Named = struct
   type category =
     | Flag
     | Flag_all
-    | Opt of { default : expression option; conv : Conv.t }
-    | Opt_all of { default : expression option; conv : Conv.t }
+    | Opt of { default_expr : expression; conv : Conv.t }
+    | Opt_all of { default_expr : expression; conv : Conv.t }
     | Required of Conv.t
-    | Non_empty of Conv.t
+    | Non_empty_opt of Conv.t
+    | Non_empty_opt_all of Conv.t
     | Non_empty_flag_all
-    | Last of  Conv.t
+    | Last of { default_expr : expression; conv : Conv.t }
 
   type t = { category : category; names_expr : expression; info : Info.t }
 
-  let of_term_attr ~loc _name ct (term_attr : term_attr) : t =
-    let conv = Conv.of_core_type ct and
-    flags = Flags.of_term_attr ~loc term_attr in
+  let category_of_non_empty ~loc (conv : Conv.t) : category =
+    match snd conv with
+    | List { sep_expr = None; basic = Bool } -> Non_empty_flag_all
+    | List { sep_expr = None; basic } ->
+        Non_empty_opt_all (fst conv, Basic basic)
+    | List { sep_expr = Some _; basic = _ } -> Non_empty_opt conv
+    | _ -> Location.raise_errorf ~loc "`non_empty` can only be used with `list`"
 
-    let category = match snd conv, flags with
-    (* non empty = true *)
-    | _, {non_empty=true; last=true; _} ->
-      Location.raise_errorf ~loc "`non_empty` and `last` cannot be used at the same time"
-    | _, {non_empty=true; default=Some _; _} ->
-      Location.raise_errorf ~loc "`non_empty` and `default` cannot be used at the same time"
-    | List (None, Bool), {non_empty=true; _} ->
-      Non_empty_flag_all
-    | List (Some _, Bool), {non_empty=true; _} ->
-      Non_empty  conv
-      (* TODO: *)
-    | List _, {non_empty=true; _} -> failwith "figure out how list work"
-    | _,{non_empty=true; _} -> Location.raise_errorf ~loc "`non_empty` can be used with `list`"
-    (* last = true *)
-    | _, {last=true; default=Some _; _} ->
-      Location.raise_errorf ~loc "`last` and `default` cannot be used at the same time"
-    | _, {last=true;_} -> Last conv
-    (* bool *)
-    | Value Bool, {default = Some _;_ }
-      | List (None, Bool), {default = Some _;_ } ->
-      Location.raise_errorf ~loc "`default` cannot be used with `bool`"
-    | Value Bool, _ -> Flag
-    | List (None, Bool), _ -> Flag_all
-    | List (Some _, _), {default; _} -> Opt {default; conv}
+  let category_of_value ~loc default (conv : Conv.t) : category =
+    match (snd conv, default) with
+    (* bool without any modifier will be flag *)
+    | Basic Bool, None -> Flag
+    | List { sep_expr = None; basic = Bool }, None -> Flag_all
+    (* list without sep will be opt_all *)
+    | List { sep_expr = None; basic }, default ->
+        let default_expr = Option.value ~default:[%expr []] default in
+        Opt_all { default_expr; conv = (fst conv, Basic basic) }
+    (* opt *)
+    | Option _, None -> Opt { default_expr = [%expr None]; conv }
+    | Array _, None -> Opt { default_expr = [%expr [||]]; conv }
+    | _, Some default_expr -> Opt { default_expr; conv }
+    | _, None -> Required conv
 
-    | _ -> failwith ""
-    and names_expr = failwith ""
+  let of_term_attr ~loc name ct (term_attr : term_attr) : t =
+    let conv = Conv.of_core_type ct
+    and as_term = As_term.of_term_attr ~loc term_attr
+    and default_names_expr =
+      let default_name_expr =
+        Ast_builder.Default.estring ~loc:name.loc name.txt
+      in
+      [%expr [ [%e default_name_expr] ]]
+    in
+
+    let category =
+      match as_term with
+      | Non_empty -> category_of_non_empty ~loc conv
+      | Last default ->
+          let default_expr =
+            Option.fold ~none:[%expr []]
+              ~some:(fun default_expr -> [%expr [ [%e default_expr] ]])
+              default
+          in
+          Last { default_expr; conv }
+      | Value default -> category_of_value ~loc default conv
+    and names_expr =
+      term_attr.names
+      |> Option.map Utils.expression_of_structure
+      |> Option.value ~default:default_names_expr
     and info = Info.of_term_attr term_attr in
     { category; names_expr; info }
 
@@ -222,14 +250,37 @@ module Named = struct
       match category with
       | Flag -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag info)]
       | Flag_all -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag_all info)]
-      | Opt { default_expr = None; conv } ->
+      | Opt { default_expr; conv } ->
           let conv_expr = Conv.to_expr conv in
           [%expr
-            let conv = [%e conv_expr] in
-            Cmdliner.Arg.value (Cmdliner.Arg.opt conv None info)]
-      (* TODO: this function should not fail *)
-      | _ -> failwith ""
+            Cmdliner.Arg.value
+              (Cmdliner.Arg.opt [%e conv_expr] [%e default_expr] info)]
+      | Opt_all { default_expr; conv } ->
+          let conv_expr = Conv.to_expr conv in
+          [%expr
+            Cmdliner.Arg.value
+              (Cmdliner.Arg.opt_all [%e conv_expr] [%e default_expr] info)]
+      | Required conv ->
+          let conv_expr = Conv.to_expr conv in
+          [%expr
+            Cmdliner.Arg.required
+              (Cmdliner.Arg.opt (Cmdliner.Arg.some [%e conv_expr]) None info)]
+      | Non_empty_opt conv ->
+          let conv_expr = Conv.to_expr conv in
+          [%expr Cmdliner.Arg.non_empty (Cmdliner.Arg.opt [%e conv_expr] [])]
+      | Non_empty_opt_all conv ->
+          let conv_expr = Conv.to_expr conv in
+          [%expr
+            Cmdliner.Arg.non_empty (Cmdliner.Arg.opt_all [%e conv_expr] [])]
+      | Non_empty_flag_all ->
+          [%expr Cmdliner.Arg.non_empty (Cmdliner.Arg.flag_all info)]
+      | Last { default_expr; conv } ->
+          let conv_expr = Conv.to_expr conv in
+          [%expr
+            Cmdliner.Arg.last
+              (Cmdliner.Arg.opt_all [%e conv_expr] [%e default_expr])]
     in
+
     [%expr
       let info : Cmdliner.Arg.info = [%e info_expr] in
       [%e term_expr]]
@@ -265,9 +316,9 @@ module T = struct
           "only one of [pos|pos_all|pos_left|pos_right] can be specified at \
            the same time"
 
-  let to_expr : t -> expression = function
-  | Named v -> Named.to_expr v
-  | Positional v -> Positional.to_expr v
+  let to_expr ~loc : t -> expression = function
+    | Named v -> Named.to_expr ~loc v
+    | Positional v -> Positional.to_expr ~loc v
 end
 
 let make_fun_vb_expr_of_label_decls ~loc (lds : label_declaration list) =
@@ -303,8 +354,8 @@ let term_vb_expr_of_label_decl (ld : label_declaration) =
         and expr =
           ld.pld_attributes
           |> Attribute_parser.Term.parse
-          |> T.of_term_attr
-          |> T.to_expr
+          |> T.of_term_attr ~loc ld.pld_name ld.pld_type
+          |> T.to_expr ~loc
         in
         Ast_helper.Vb.mk pat expr
       and var_expr =

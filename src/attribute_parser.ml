@@ -69,7 +69,7 @@ module Term = struct
     docv : 'a option;
     env : 'a option;
     (* named *)
-    name : 'a option;
+    names : 'a option;
     (* positional *)
     pos : 'a option;
     pos_all : 'a option;
@@ -77,7 +77,8 @@ module Term = struct
     pos_right : 'a option;
     (* list *)
     non_empty : 'a option;
-    last : 'a option; (* TODO: support sep, t_sep, file, dir, non_dir_file, default *)
+    last : 'a option;
+        (* TODO: support sep, t_sep, file, dir, non_dir_file, default *)
   }
   [@@deriving make]
 
@@ -92,7 +93,7 @@ module Term = struct
         docs;
         docv;
         env;
-        name;
+        names;
         pos;
         pos_all;
         pos_left;
@@ -109,7 +110,7 @@ module Term = struct
       docv = f docv;
       env = f env;
       (* named *)
-      name = f name;
+      names = f names;
       (* positional *)
       pos = f pos;
       pos_all = f pos_all;
@@ -129,7 +130,7 @@ module Term = struct
         "docs";
         "docv";
         "env";
-        "name";
+        "names";
         "pos";
         "pos_all";
         "pos_left";
@@ -160,7 +161,7 @@ module Term = struct
     | "docs" -> { t with docs = Level.join t.docs v }
     | "docv" -> { t with docv = Level.join t.docv v }
     | "env" -> { t with env = Level.join t.env v }
-    | "name" -> { t with name = Level.join t.name v }
+    | "names" -> { t with names = Level.join t.names v }
     | "pos" -> { t with pos = Level.join t.pos v }
     | "pos_all" -> { t with pos_all = Level.join t.pos_all v }
     | "pos_left" -> { t with pos_left = Level.join t.pos_left v }
