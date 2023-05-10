@@ -9,9 +9,9 @@ let structure_of_type_decl ~loc:_ (_rec_flag : rec_flag) (td : type_declaration)
   | { ptype_kind = Ptype_variant cds; _ } ->
       (* type t = C of T | ... *)
       Group_cmds.structure_of_const_decls ~loc name cds
-  | { ptype_kind = Ptype_record _lds; _ } ->
+  | { ptype_kind = Ptype_record lds; _ } ->
       (* type t = {l: T; ...} *)
-      Error.unsupported_type ~loc "type declaration of record" name
+        Term.structure_of_label_decls ~loc name lds
   | _ -> Error.unsupported_type ~loc "type declaration" name
 
 (* generate signature for type declaration *)
@@ -25,7 +25,7 @@ let signature_of_type_decl ~loc:_ (_rec_flag : rec_flag) (td : type_declaration)
       Group_cmds.signature_of_const_decls ~loc name cds
   | { ptype_kind = Ptype_record lds; _ } ->
       (* type t = {l: T; ...} *)
-      Term.signature_of_lablel_decls ~loc name lds
+      Term.signature_of_label_decls ~loc name lds
   | _ -> Error.unsupported_type ~loc "type declaration" name
 
 let str_type_decl = Utils.make_type_decl_generator structure_of_type_decl

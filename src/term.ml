@@ -402,7 +402,7 @@ let structure_of_label_decls ~loc name (lds : label_declaration list) =
       in
       [ stri ])
 
-let signature_of_lablel_decls ~loc name (_lds : label_declaration list) =
+let signature_of_label_decls ~loc name (_lds : label_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
       let sigi =
         let fun_name = gen_name name
