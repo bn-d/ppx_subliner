@@ -44,8 +44,8 @@ module Term = struct
       test_exist "docv.s" [%expr t [@subliner.docv]] (fun { docv = v; _ } -> v);
       test_exist "env" [%expr t [@env]] (fun { env = v; _ } -> v);
       test_exist "env.s" [%expr t [@subliner.env]] (fun { env = v; _ } -> v);
-      test_exist "names" [%expr t [@name]] (fun { names = v; _ } -> v);
-      test_exist "names.s" [%expr t [@subliner.name]] (fun { names = v; _ } ->
+      test_exist "names" [%expr t [@names]] (fun { names = v; _ } -> v);
+      test_exist "names.s" [%expr t [@subliner.names]] (fun { names = v; _ } ->
           v);
       test_exist "pos" [%expr t [@pos]] (fun { pos = v; _ } -> v);
       test_exist "pos.s" [%expr t [@subliner.pos]] (fun { pos = v; _ } -> v);
