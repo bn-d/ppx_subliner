@@ -217,16 +217,9 @@ module Named = struct
     | _, None -> Required conv
 
   let of_term_attr ~loc name ct (term_attr : term_attr) : t =
-    let conv = Conv.of_core_type ct
-    and as_term = As_term.of_term_attr ~loc term_attr
-    and default_names_expr =
-      let default_name_expr =
-        Ast_builder.Default.estring ~loc:name.loc name.txt
-      in
-      [%expr [ [%e default_name_expr] ]]
-    in
-
     let category =
+      let conv = Conv.of_core_type ct
+      and as_term = As_term.of_term_attr ~loc term_attr in
       match as_term with
       | Non_empty -> category_of_non_empty ~loc conv
       | Last default ->
@@ -238,6 +231,12 @@ module Named = struct
           Last { default_expr; conv }
       | Value default -> category_of_value ~loc default conv
     and names_expr =
+      let default_names_expr =
+        let default_name_expr =
+          Ast_builder.Default.estring ~loc:name.loc name.txt
+        in
+        [%expr [ [%e default_name_expr] ]]
+      in
       term_attr.names
       |> Option.map Utils.expression_of_structure
       |> Option.value ~default:default_names_expr
@@ -245,8 +244,8 @@ module Named = struct
     { category; names_expr; info }
 
   let to_expr ~loc ({ category; names_expr; info } : t) =
-    let info_expr = Info.to_expr ~loc names_expr info in
-    let term_expr =
+    let info_expr = Info.to_expr ~loc names_expr info
+    and term_expr =
       match category with
       | Flag -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag info)]
       | Flag_all -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag_all info)]
