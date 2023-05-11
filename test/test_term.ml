@@ -3,22 +3,23 @@ open Ppxlib
 let loc = Location.none
 
 module Conv = struct
-  open Ppx_subliner.Term.Conv
+  module M = Ppx_subliner.Term.Conv
 
   let t = Alcotest.testable (fun _ _ -> ()) ( = )
 
-  let test name (ct : core_type) (expected : complex) =
-    let f () = of_core_type ct |> snd |> Alcotest.check t name expected in
+  let test name (ct : core_type) (expected : M.complex) =
+    let f () = M.of_core_type ct |> snd |> Alcotest.check t name expected in
     Alcotest.test_case name `Quick f
 
   let test_raises name (ct : core_type) expected =
-    Utils.test_raises name expected (fun () -> of_core_type ct)
+    Utils.test_raises name expected (fun () -> M.of_core_type ct)
 
-  let test_gen name (t : complex) (func : expression -> bool) =
-    let f () = assert (to_expr (loc, t) |> func) in
+  let test_gen name (t : M.complex) (func : expression -> bool) =
+    let f () = assert (M.to_expr (loc, t) |> func) in
     Alcotest.test_case ("gen." ^ name) `Quick f
 
   let test_set =
+    let open M in
     [
       test "bool" [%type: bool] (Basic Bool);
       test "Bool.t" [%type: Bool.t] (Basic Bool);
@@ -63,12 +64,12 @@ module Conv = struct
 end
 
 module Info = struct
-  open Ppx_subliner.Term.Info
+  module M = Ppx_subliner.Term.Info
   module A = Ppx_subliner.Attribute_parser.Term
 
   let test_gen name term_attr func =
     let f () =
-      assert (expr_of_term_attr ~loc [%expr [ "NAME" ]] term_attr |> func)
+      assert (M.expr_of_term_attr ~loc [%expr [ "NAME" ]] term_attr |> func)
     in
     Alcotest.test_case ("gen." ^ name) `Quick f
 
