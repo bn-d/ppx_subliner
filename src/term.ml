@@ -92,43 +92,23 @@ end
 type term_attr = (location * structure) Attribute_parser.Term.t
 
 module Info = struct
-  type t = {
-    deprecated : expression option;
-    absent : expression option;
-    docs : expression option;
-    docv : expression option;
-    doc : expression option;
-    env : expression option;
-  }
-
-  let of_term_attr (term_attr : term_attr) : t =
-    let f = Option.map Utils.expression_of_structure in
-    {
-      deprecated = f term_attr.deprecated;
-      absent = f term_attr.absent;
-      doc = f term_attr.doc;
-      docs = f term_attr.docs;
-      docv = f term_attr.docv;
-      env = f term_attr.env;
-    }
-
-  let to_expr
-      ~loc
-      (names_expr : expression)
-      ({ deprecated; absent; docs; docv; doc; env } : t) : expression =
+  let expr_of_term_attr ~loc (names_expr : expression) (term_attr : term_attr) :
+      expression =
     Ast_helper.with_default_loc loc (fun () ->
         let args =
           let labelled =
+            let f = Option.map Utils.expression_of_structure in
             [
-              ("deprecated", deprecated);
-              ("absent", absent);
-              ("docs", docs);
-              ("docv", docv);
-              ("doc", doc);
-              ("env", env);
+              ("deprecated", f term_attr.deprecated);
+              ("absent", f term_attr.absent);
+              ("docs", f term_attr.docs);
+              ("docv", f term_attr.docv);
+              ("doc", f term_attr.doc);
+              ("env", f term_attr.env);
             ]
             |> List.filter_map (fun (name, expr_opt) ->
                    Option.map (fun expr -> (Labelled name, expr)) expr_opt)
+          (* names_expr should always resolved by Named or Positional *)
           and no_label = [ (Nolabel, names_expr) ] in
           labelled @ no_label
         in
@@ -175,7 +155,7 @@ module Named = struct
     | Non_empty_flag_all
     | Last of { default_expr : expression; conv : Conv.t }
 
-  type t = { category : category; names_expr : expression; info : Info.t }
+  type t = { category : category; info_expr : expression }
 
   let category_of_non_empty ~loc (conv : Conv.t) : category =
     match snd conv with
@@ -214,22 +194,24 @@ module Named = struct
           in
           Last { default_expr; conv }
       | Value default -> category_of_value ~loc default conv
-    and names_expr =
-      let default_names_expr =
-        let default_name_expr =
-          Ast_builder.Default.estring ~loc:name.loc name.txt
+    and info_expr =
+      let names_expr =
+        let default_names_expr =
+          let default_name_expr =
+            Ast_builder.Default.estring ~loc:name.loc name.txt
+          in
+          [%expr [ [%e default_name_expr] ]]
         in
-        [%expr [ [%e default_name_expr] ]]
+        term_attr.names
+        |> Option.map Utils.expression_of_structure
+        |> Option.value ~default:default_names_expr
       in
-      term_attr.names
-      |> Option.map Utils.expression_of_structure
-      |> Option.value ~default:default_names_expr
-    and info = Info.of_term_attr term_attr in
-    { category; names_expr; info }
+      Info.expr_of_term_attr ~loc names_expr term_attr
+    in
+    { category; info_expr }
 
-  let to_expr ~loc ({ category; names_expr; info } : t) =
-    let info_expr = Info.to_expr ~loc names_expr info
-    and term_expr =
+  let to_expr ~loc ({ category; info_expr } : t) =
+    let term_expr =
       match category with
       | Flag -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag info)]
       | Flag_all -> [%expr Cmdliner.Arg.value (Cmdliner.Arg.flag_all info)]
@@ -271,16 +253,14 @@ end
 
 module Positional = struct
   type category = Pos of int | Pos_all | Pos_left of int | Pos_right of int
-  type t = { category : category; info : Info.t }
+  type t = { category : category; info_expr : expression }
 
   let of_term_attr ~loc:_ _name _ct (_term_attr : term_attr) : t = failwith ""
   let to_expr ~loc:_ (_ : t) = failwith ""
 end
 
 module T = struct
-  type t = Named of Named.t | Positional of Positional.t
-
-  let of_term_attr ~loc name ct (term_attr : term_attr) =
+  let expr_of_term_attr ~loc name ct (term_attr : term_attr) =
     let pos_count =
       let count opt = if Option.is_some opt then 1 else 0 in
       count term_attr.pos
@@ -290,18 +270,16 @@ module T = struct
     in
     match pos_count with
     (* named *)
-    | 0 -> Named (Named.of_term_attr ~loc name ct term_attr)
+    | 0 -> Named.of_term_attr ~loc name ct term_attr |> Named.to_expr ~loc
     (* positional *)
-    | 1 -> Positional (Positional.of_term_attr ~loc name ct term_attr)
+    | 1 ->
+        Positional.of_term_attr ~loc name ct term_attr
+        |> Positional.to_expr ~loc
     (* multiple pos error *)
     | _ ->
         Location.raise_errorf ~loc
           "only one of [pos|pos_all|pos_left|pos_right] can be specified at \
            the same time"
-
-  let to_expr ~loc : t -> expression = function
-    | Named v -> Named.to_expr ~loc v
-    | Positional v -> Positional.to_expr ~loc v
 end
 
 let make_fun_vb_expr_of_label_decls ~loc (lds : label_declaration list) =
@@ -337,8 +315,7 @@ let term_vb_expr_of_label_decl (ld : label_declaration) =
         and expr =
           ld.pld_attributes
           |> Attribute_parser.Term.parse
-          |> T.of_term_attr ~loc ld.pld_name ld.pld_type
-          |> T.to_expr ~loc
+          |> T.expr_of_term_attr ~loc ld.pld_name ld.pld_type
         in
         Ast_helper.Vb.mk pat expr
       and var_expr =

@@ -18,6 +18,7 @@ module Term : sig
     non_empty : 'a option;
     last : 'a option;
   }
+  [@@deriving make]
 
   val empty : 'a t
   val map : ('a -> 'b) -> 'a t -> 'b t

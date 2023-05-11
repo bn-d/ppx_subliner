@@ -11,19 +11,23 @@ let test_impl
   Alcotest.test_case name `Quick f
 
 module Term = struct
-  module T = Ppx_subliner.Attribute_parser.Term
+  module M = Ppx_subliner.Attribute_parser.Term
 
   let test =
     test_impl (fun expr ->
-        T.(parse expr |> map (fun (_loc, structure) -> structure)))
+        M.(parse expr |> map (fun (_loc, structure) -> structure)))
 
   let test_exist name expr func =
     test ("attr." ^ name) expr (fun t -> assert (t |> func |> Option.is_some))
 
+  let test_raises name (expression : expression) expected =
+    Utils.test_raises name expected (fun () ->
+        M.parse expression.pexp_attributes)
+
   let test_set =
     [
       test "empty" [%expr t] (fun t ->
-          T.map (fun _ -> assert false) t |> ignore);
+          M.map (fun _ -> assert false) t |> ignore);
       test_exist "deprecated" [%expr t [@deprecated]]
         (fun { deprecated = v; _ } -> v);
       test_exist "deprecated.s" [%expr t [@subliner.deprecated]]
@@ -69,18 +73,12 @@ module Term = struct
 end
 
 module Common = struct
-  module T = Term.T
-
-  let test = Term.test
-
-  let test_raises name (expression : expression) expected =
-    Utils.test_raises name expected (fun () ->
-        T.parse expression.pexp_attributes)
+  let test, test_raises = (Term.test, Term.test_raises)
 
   let test_set =
     [
       test "ignore" [%expr t [@irrelevant]] (fun t ->
-          T.map (fun _ -> assert false) t |> ignore);
+          Term.M.map (fun _ -> assert false) t |> ignore);
       (* level priority *)
       test "priority_0" [%expr t [@ocaml.doc] [@doc ""]] (fun { doc; _ } ->
           doc |> Option.get |> fun l -> assert (List.length l = 1));

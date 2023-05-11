@@ -14,7 +14,11 @@ module Conv = struct
   let test_raises name (ct : core_type) expected =
     Utils.test_raises name expected (fun () -> of_core_type ct)
 
-  let parse_test_set =
+  let test_gen name (t : complex) (func : expression -> bool) =
+    let f () = assert (to_expr (loc, t) |> func) in
+    Alcotest.test_case ("gen." ^ name) `Quick f
+
+  let test_set =
     [
       test "bool" [%type: bool] (Basic Bool);
       test "Bool.t" [%type: Bool.t] (Basic Bool);
@@ -41,14 +45,6 @@ module Conv = struct
         (Array { sep_expr = None; basic = Int });
       test_raises "invalid_1" [%type: int seq] "unsupported field type";
       test_raises "invalid_2" [%type: unit] "unsupported field type";
-    ]
-
-  let test_gen name (t : complex) (func : expression -> bool) =
-    let f () = assert (to_expr (loc, t) |> func) in
-    Alcotest.test_case name `Quick f
-
-  let gen_test_set =
-    [
       test_gen "basic" (Basic Bool) (function
         | [%expr Cmdliner.Arg.(bool)] -> true
         | _ -> false);
@@ -65,5 +61,37 @@ module Conv = struct
           | [%expr Cmdliner.Arg.(array ~sep:';' float)] -> true | _ -> false);
     ]
 end
+
+module Info = struct
+  open Ppx_subliner.Term.Info
+  module A = Ppx_subliner.Attribute_parser.Term
+
+  let test_gen name term_attr func =
+    let f () =
+      assert (expr_of_term_attr ~loc [%expr [ "NAME" ]] term_attr |> func)
+    in
+    Alcotest.test_case ("gen." ^ name) `Quick f
+
+  let test_set =
+    [
+      test_gen "empty" A.empty (function
+        | [%expr Cmdliner.Arg.info [ "NAME" ]] -> true
+        | _ -> false);
+      test_gen "all"
+        (let s = (loc, [%str ()]) in
+         A.make_t ~deprecated:s ~absent:s ~docs:s ~docv:s ~doc:s ~env:s ())
+        (function
+          | [%expr
+              Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:()
+                ~doc:() ~env:() [ "NAME" ]] ->
+              true
+          | _ -> false);
+    ]
+end
+
+(*module As_term = struct
+
+
+  end*)
 
 let test_set = []
