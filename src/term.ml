@@ -31,78 +31,62 @@ module Conv = struct
 
   type t = Location.t * complex
 
-  let basic_of_core_type (ct : core_type) : basic =
-    match ct.ptyp_desc with
-    | Ptyp_constr ({ txt = Lident "bool"; _ }, [])
-    | Ptyp_constr ({ txt = Ldot (Lident "Bool", "t"); _ }, []) ->
-        Bool
-    | Ptyp_constr ({ txt = Lident "char"; _ }, [])
-    | Ptyp_constr ({ txt = Ldot (Lident "Char", "t"); _ }, []) ->
-        Char
-    | Ptyp_constr ({ txt = Lident "int"; _ }, [])
-    | Ptyp_constr ({ txt = Ldot (Lident "Int", "t"); _ }, []) ->
-        Int
-    | Ptyp_constr ({ txt = Lident "nativeint"; _ }, [])
-    | Ptyp_constr ({ txt = Ldot (Lident "Nativeint", "t"); _ }, []) ->
-        Nativeint
-    | Ptyp_constr ({ txt = Lident "int32"; _ }, [])
-    | Ptyp_constr ({ txt = Ldot (Lident "Int32", "t"); _ }, []) ->
-        Int32
-    | Ptyp_constr ({ txt = Lident "int64"; _ }, [])
-    | Ptyp_constr ({ txt = Ldot (Lident "Int64", "t"); _ }, []) ->
-        Int64
-    | Ptyp_constr ({ txt = Lident "float"; _ }, [])
-    | Ptyp_constr ({ txt = Ldot (Lident "Float", "t"); _ }, []) ->
-        Float
-    | Ptyp_constr ({ txt = Lident "string"; _ }, [])
-    | Ptyp_constr ({ txt = Ldot (Lident "String", "t"); _ }, []) ->
-        String
-    | _ -> Error.field_type ~loc:ct.ptyp_loc
+  let basic_of_core_type : core_type -> basic = function
+    | [%type: bool] | [%type: Bool.t] -> Bool
+    | [%type: char] | [%type: Char.t] -> Char
+    | [%type: int] | [%type: Int.t] -> Int
+    | [%type: nativeint] | [%type: Nativeint.t] -> Nativeint
+    | [%type: int32] | [%type: Int32.t] -> Int32
+    | [%type: int64] | [%type: Int64.t] -> Int64
+    | [%type: float] | [%type: Float.t] -> Float
+    | [%type: string] | [%type: String.t] -> String
+    | { ptyp_loc = loc; _ } -> Error.field_type ~loc
 
   let of_core_type (ct : core_type) : t =
     let loc = ct.ptyp_loc in
-    match ct.ptyp_desc with
-    | Ptyp_constr (_, []) -> (loc, Basic (basic_of_core_type ct))
-    | Ptyp_constr ({ txt = Lident "option"; _ }, [ ct ])
-    | Ptyp_constr ({ txt = Ldot (Lident "Option", "t"); _ }, [ ct ]) ->
+    match ct with
+    | [%type: [%t? ct] option] | [%type: [%t? ct] Option.t] ->
         (loc, Option (basic_of_core_type ct))
-    | Ptyp_constr ({ txt = Lident "list"; _ }, [ ct ])
-    | Ptyp_constr ({ txt = Ldot (Lident "List", "t"); _ }, [ ct ]) ->
+    | [%type: [%t? ct] list] | [%type: [%t? ct] List.t] ->
         (loc, List { sep_expr = None; basic = basic_of_core_type ct })
-    | Ptyp_constr ({ txt = Lident "array"; _ }, [ ct ])
-    | Ptyp_constr ({ txt = Ldot (Lident "Array", "t"); _ }, [ ct ]) ->
+    | [%type: [%t? ct] array] | [%type: [%t? ct] Array.t] ->
         (loc, Array { sep_expr = None; basic = basic_of_core_type ct })
+    | { ptyp_desc = Ptyp_constr (_, []); _ } ->
+        (loc, Basic (basic_of_core_type ct))
     (* TODO: add support for custom conv *)
     | _ -> Error.field_type ~loc:ct.ptyp_loc
 
   let basic_to_expr ~loc : basic -> expression = function
-    | Bool -> [%expr Cmdliner.Arg.bool]
-    | Char -> [%expr Cmdliner.Arg.char]
-    | Int -> [%expr Cmdliner.Arg.int]
-    | Nativeint -> [%expr Cmdliner.Arg.nativeint]
-    | Int32 -> [%expr Cmdliner.Arg.int32]
-    | Int64 -> [%expr Cmdliner.Arg.int64]
-    | Float -> [%expr Cmdliner.Arg.float]
-    | String -> [%expr Cmdliner.Arg.string]
-    | File -> [%expr Cmdliner.Arg.file]
-    | Dir -> [%expr Cmdliner.Arg.dir]
-    | Non_dir_file -> [%expr Cmdliner.Arg.non_dir_file]
+    | Bool -> [%expr bool]
+    | Char -> [%expr char]
+    | Int -> [%expr int]
+    | Nativeint -> [%expr nativeint]
+    | Int32 -> [%expr int32]
+    | Int64 -> [%expr int64]
+    | Float -> [%expr float]
+    | String -> [%expr string]
+    | File -> [%expr file]
+    | Dir -> [%expr dir]
+    | Non_dir_file -> [%expr non_dir_file]
 
   let to_expr ((loc, complex) : t) : expression =
     Ast_helper.with_default_loc loc (fun () ->
-        match complex with
-        | Basic basic -> basic_to_expr ~loc basic
-        | Option basic ->
-            let basic_expr = basic_to_expr ~loc basic in
-            [%expr Cmdliner.Arg.some [%e basic_expr]]
-        | List { sep_expr; basic } ->
-            let sep_expr = Option.value ~default:[%expr ','] sep_expr
-            and basic_expr = basic_to_expr ~loc basic in
-            [%expr Cmdliner.Arg.list ~sep:[%e sep_expr] [%e basic_expr]]
-        | Array { sep_expr; basic } ->
-            let sep_expr = Option.value ~default:[%expr ','] sep_expr
-            and basic_expr = basic_to_expr ~loc basic in
-            [%expr Cmdliner.Arg.array ~sep:[%e sep_expr] [%e basic_expr]])
+        let complex_expr =
+          match complex with
+          | Basic basic -> basic_to_expr ~loc basic
+          | Option basic ->
+              let basic_expr = basic_to_expr ~loc basic in
+              [%expr some [%e basic_expr]]
+          | List { sep_expr; basic } ->
+              let sep_expr = Option.value ~default:[%expr ','] sep_expr
+              and basic_expr = basic_to_expr ~loc basic in
+              [%expr list ~sep:[%e sep_expr] [%e basic_expr]]
+          | Array { sep_expr; basic } ->
+              let sep_expr = Option.value ~default:[%expr ','] sep_expr
+              and basic_expr = basic_to_expr ~loc basic in
+              [%expr array ~sep:[%e sep_expr] [%e basic_expr]]
+        in
+        [%expr Cmdliner.Arg.([%e complex_expr])])
 end
 
 type term_attr = (location * structure) Attribute_parser.Term.t

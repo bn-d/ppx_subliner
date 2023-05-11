@@ -11,7 +11,7 @@ let structure_of_type_decl ~loc:_ (_rec_flag : rec_flag) (td : type_declaration)
       Group_cmds.structure_of_const_decls ~loc name cds
   | { ptype_kind = Ptype_record lds; _ } ->
       (* type t = {l: T; ...} *)
-        Term.structure_of_label_decls ~loc name lds
+      Term.structure_of_label_decls ~loc name lds
   | _ -> Error.unsupported_type ~loc "type declaration" name
 
 (* generate signature for type declaration *)
