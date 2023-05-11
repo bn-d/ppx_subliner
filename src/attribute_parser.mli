@@ -1,14 +1,19 @@
+val to_bool : (Ppxlib.location * Ppxlib.structure) option -> bool
+
+val to_expr_opt :
+  (Ppxlib.location * Ppxlib.structure) option -> Ppxlib.expression option
+
 module Term : sig
   type 'a t = {
     (* info *)
     deprecated : 'a option;
     absent : 'a option;
-    doc : 'a option;
     docs : 'a option;
     docv : 'a option;
+    doc : 'a option;
     env : 'a option;
     (* named *)
-    name : 'a option;
+    names : 'a option;
     (* positional *)
     pos : 'a option;
     pos_all : 'a option;
@@ -17,7 +22,9 @@ module Term : sig
     (* list *)
     non_empty : 'a option;
     last : 'a option;
+    default : 'a option;
   }
+  [@@deriving make]
 
   val empty : 'a t
   val map : ('a -> 'b) -> 'a t -> 'b t

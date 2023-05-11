@@ -11,19 +11,23 @@ let test_impl
   Alcotest.test_case name `Quick f
 
 module Term = struct
-  module T = Ppx_subliner.Attribute_parser.Term
+  module M = Ppx_subliner.Attribute_parser.Term
 
   let test =
     test_impl (fun expr ->
-        T.(parse expr |> map (fun (_loc, structure) -> structure)))
+        M.(parse expr |> map (fun (_loc, structure) -> structure)))
 
   let test_exist name expr func =
     test ("attr." ^ name) expr (fun t -> assert (t |> func |> Option.is_some))
 
+  let test_raises name (expression : expression) expected =
+    Utils.test_raises name expected (fun () ->
+        M.parse expression.pexp_attributes)
+
   let test_set =
     [
       test "empty" [%expr t] (fun t ->
-          T.map (fun _ -> assert false) t |> ignore);
+          M.map (fun _ -> assert false) t |> ignore);
       test_exist "deprecated" [%expr t [@deprecated]]
         (fun { deprecated = v; _ } -> v);
       test_exist "deprecated.s" [%expr t [@subliner.deprecated]]
@@ -44,8 +48,9 @@ module Term = struct
       test_exist "docv.s" [%expr t [@subliner.docv]] (fun { docv = v; _ } -> v);
       test_exist "env" [%expr t [@env]] (fun { env = v; _ } -> v);
       test_exist "env.s" [%expr t [@subliner.env]] (fun { env = v; _ } -> v);
-      test_exist "name" [%expr t [@name]] (fun { name = v; _ } -> v);
-      test_exist "name.s" [%expr t [@subliner.name]] (fun { name = v; _ } -> v);
+      test_exist "names" [%expr t [@names]] (fun { names = v; _ } -> v);
+      test_exist "names.s" [%expr t [@subliner.names]] (fun { names = v; _ } ->
+          v);
       test_exist "pos" [%expr t [@pos]] (fun { pos = v; _ } -> v);
       test_exist "pos.s" [%expr t [@subliner.pos]] (fun { pos = v; _ } -> v);
       test_exist "pos_all" [%expr t [@pos_all]] (fun { pos_all = v; _ } -> v);
@@ -64,29 +69,19 @@ module Term = struct
         (fun { non_empty = v; _ } -> v);
       test_exist "last" [%expr t [@last]] (fun { last = v; _ } -> v);
       test_exist "last.s" [%expr t [@subliner.last]] (fun { last = v; _ } -> v);
+      test_exist "default" [%expr t [@default]] (fun { default = v; _ } -> v);
+      test_exist "default.s" [%expr t [@subliner.default]]
+        (fun { default = v; _ } -> v);
     ]
 end
 
 module Common = struct
-  module T = Term.T
-
-  let test = Term.test
-
-  let test_raise name (expression : expression) expected =
-    let f () =
-      try
-        let () = T.parse expression.pexp_attributes |> ignore in
-        Alcotest.fail "test expected to fail"
-      with Location.Error error ->
-        let actual = Location.Error.message error in
-        Alcotest.(check string) name expected actual
-    in
-    Alcotest.test_case name `Quick f
+  let test, test_raises = (Term.test, Term.test_raises)
 
   let test_set =
     [
       test "ignore" [%expr t [@irrelevant]] (fun t ->
-          T.map (fun _ -> assert false) t |> ignore);
+          Term.M.map (fun _ -> assert false) t |> ignore);
       (* level priority *)
       test "priority_0" [%expr t [@ocaml.doc] [@doc ""]] (fun { doc; _ } ->
           doc |> Option.get |> fun l -> assert (List.length l = 1));
@@ -100,9 +95,9 @@ module Common = struct
       test "priority_4" [%expr t [@subliner.doc ""] [@doc]] (fun { doc; _ } ->
           doc |> Option.get |> fun l -> assert (List.length l = 1));
       (* expected failure *)
-      test_raise "invalid_payload" [%expr t [@doc: int]]
+      test_raises "invalid_payload" [%expr t [@doc: int]]
         "unsupported payload for attribute";
-      test_raise "invalid_attr" [%expr t [@subliner.irrelevant]]
+      test_raises "invalid_attr" [%expr t [@subliner.irrelevant]]
         "unexpected attribute name: irrelevant";
     ]
 end
