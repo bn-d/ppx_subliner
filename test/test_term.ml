@@ -1,6 +1,10 @@
 open Ppxlib
+module A = Ppx_subliner.Attribute_parser.Term
+
+type term_attr = Ppx_subliner.Term.term_attr
 
 let loc = Location.none
+let msg = "actual is different from expected"
 
 module Conv = struct
   module M = Ppx_subliner.Term.Conv
@@ -8,7 +12,7 @@ module Conv = struct
   let t = Alcotest.testable (fun _ _ -> ()) ( = )
 
   let test name (ct : core_type) (expected : M.complex) =
-    let f () = M.of_core_type ct |> snd |> Alcotest.check t name expected in
+    let f () = M.of_core_type ct |> snd |> Alcotest.check t msg expected in
     Alcotest.test_case name `Quick f
 
   let test_raises name (ct : core_type) expected =
@@ -65,34 +69,53 @@ end
 
 module Info = struct
   module M = Ppx_subliner.Term.Info
-  module A = Ppx_subliner.Attribute_parser.Term
 
-  let test_gen name term_attr func =
+  let test_gen name (term_attr : term_attr) (func : expression -> bool) =
     let f () =
       assert (M.expr_of_term_attr ~loc [%expr [ "NAME" ]] term_attr |> func)
     in
     Alcotest.test_case ("gen." ^ name) `Quick f
 
   let test_set =
+    let u = (loc, [%str ()]) in
     [
       test_gen "empty" A.empty (function
         | [%expr Cmdliner.Arg.info [ "NAME" ]] -> true
         | _ -> false);
       test_gen "all"
-        (let s = (loc, [%str ()]) in
-         A.make_t ~deprecated:s ~absent:s ~docs:s ~docv:s ~doc:s ~env:s ())
+        (A.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u ())
         (function
-          | [%expr
-              Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:()
-                ~doc:() ~env:() [ "NAME" ]] ->
-              true
-          | _ -> false);
+        | [%expr
+            Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:()
+              ~doc:() ~env:() [ "NAME" ]] ->
+            true
+        | _ -> false);
     ]
 end
 
-(*module As_term = struct
+module As_term = struct
+  module M = Ppx_subliner.Term.As_term
 
+  let t = Alcotest.testable (fun _ _ -> ()) ( = )
 
-  end*)
+  let test name (term_attr : term_attr) expected =
+    let f () = M.of_term_attr ~loc term_attr |> Alcotest.check t msg expected in
+    Alcotest.test_case name `Quick f
+
+  let test_raises name (term_attr : term_attr) expected =
+    Utils.test_raises name expected (fun () -> M.of_term_attr ~loc term_attr)
+
+  let test_set =
+    let open M in
+    let s = (loc, [%str]) in
+    [
+      test "empty" A.empty (Value None);
+      test "non_empty" (A.make_t ~non_empty:s ()) Non_empty;
+      test "last" (A.make_t ~last:s ()) (Last None);
+      test_raises "duplicated_flag"
+        (A.make_t ~non_empty:s ~last:s ())
+        "`non_empty` and `last` cannot be used at the same time";
+    ]
+end
 
 let test_set = []
