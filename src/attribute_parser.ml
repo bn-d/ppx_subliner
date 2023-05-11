@@ -21,6 +21,9 @@ module Level = struct
     | Derived a -> Derived (f a)
     | General a -> General (f a)
     | Prefixed a -> Prefixed (f a)
+
+  let general = Option.map (fun v -> General v)
+  let prefixed = Option.map (fun v -> Prefixed v)
 end
 
 let get_expr name (attrs : attributes) =
@@ -48,7 +51,7 @@ let parse_impl
          |> function
          | None -> acc
          | Some field ->
-             update_field ~loc (Level.get field)
+             update_field (Level.get field)
                (Level.map
                   (fun _ ->
                     match attr.attr_payload with
@@ -74,9 +77,9 @@ module Term = struct
     (* info *)
     deprecated : 'a option;
     absent : 'a option;
-    doc : 'a option;
     docs : 'a option;
     docv : 'a option;
+    doc : 'a option;
     env : 'a option;
     (* named *)
     names : 'a option;
@@ -100,9 +103,9 @@ module Term = struct
       {
         deprecated;
         absent;
-        doc;
         docs;
         docv;
+        doc;
         env;
         names;
         pos;
@@ -117,9 +120,9 @@ module Term = struct
     {
       deprecated = f deprecated;
       absent = f absent;
-      doc = f doc;
       docs = f docs;
       docv = f docv;
+      doc = f doc;
       env = f env;
       (* named *)
       names = f names;
@@ -134,56 +137,56 @@ module Term = struct
       default = f default;
     }
 
+  let tag_of_string = function
+    | "deprecated" -> Some `deprecated
+    | "absent" -> Some `absent
+    | "docs" -> Some `docs
+    | "docv" -> Some `docv
+    | "doc" -> Some `doc
+    | "env" -> Some `env
+    | "names" -> Some `names
+    | "pos" -> Some `pos
+    | "pos_all" -> Some `pos_all
+    | "pos_left" -> Some `pos_left
+    | "pos_right" -> Some `pos_right
+    | "non_empty" -> Some `non_empty
+    | "last" -> Some `last
+    | "default" -> Some `default
+    | _ -> None
+
   let field_level_of_attr_name { txt = name; loc } =
-    let valid =
-      [
-        "deprecated";
-        "absent";
-        "doc";
-        "docs";
-        "docv";
-        "env";
-        "names";
-        "pos";
-        "pos_all";
-        "pos_left";
-        "pos_right";
-        "non_empty";
-        "last";
-        "default";
-      ]
-    in
+    let tag = tag_of_string name in
     match name with
-    | "ocaml.doc" -> Some (Derived "doc")
-    | "deprecated_" -> Some (General "deprecated")
-    | "subliner.deprecated_" -> Some (Prefixed "deprecated")
-    | _ when List.exists (( = ) name) valid -> Some (General name)
+    | _ when Option.is_some tag -> Level.general tag
+    | "ocaml.doc" -> Some (Derived `doc)
+    | "deprecated_" -> Some (General `deprecated)
+    | "subliner.deprecated_" -> Some (Prefixed `deprecated)
     | _ when Utils.string_starts_with ~prefix name ->
         let len = String.length name in
         let name = String.sub name prefix_len (len - prefix_len) in
-        if List.exists (( = ) name) valid then
-          Some (Prefixed name)
+        let tag = tag_of_string name in
+        if Option.is_some tag then
+          Level.prefixed tag
         else
           Error.attribute_name ~loc name
     | _ -> None
 
-  let update_field ~loc name v t =
+  let update_field name v t =
     match name with
-    | "deprecated" -> { t with deprecated = Level.join t.deprecated v }
-    | "absent" -> { t with absent = Level.join t.absent v }
-    | "doc" -> { t with doc = Level.join t.doc v }
-    | "docs" -> { t with docs = Level.join t.docs v }
-    | "docv" -> { t with docv = Level.join t.docv v }
-    | "env" -> { t with env = Level.join t.env v }
-    | "names" -> { t with names = Level.join t.names v }
-    | "pos" -> { t with pos = Level.join t.pos v }
-    | "pos_all" -> { t with pos_all = Level.join t.pos_all v }
-    | "pos_left" -> { t with pos_left = Level.join t.pos_left v }
-    | "pos_right" -> { t with pos_right = Level.join t.pos_right v }
-    | "non_empty" -> { t with non_empty = Level.join t.non_empty v }
-    | "last" -> { t with last = Level.join t.last v }
-    | "default" -> { t with default = Level.join t.default v }
-    | name -> Error.attribute_name ~loc name
+    | `deprecated -> { t with deprecated = Level.join t.deprecated v }
+    | `absent -> { t with absent = Level.join t.absent v }
+    | `doc -> { t with doc = Level.join t.doc v }
+    | `docs -> { t with docs = Level.join t.docs v }
+    | `docv -> { t with docv = Level.join t.docv v }
+    | `env -> { t with env = Level.join t.env v }
+    | `names -> { t with names = Level.join t.names v }
+    | `pos -> { t with pos = Level.join t.pos v }
+    | `pos_all -> { t with pos_all = Level.join t.pos_all v }
+    | `pos_left -> { t with pos_left = Level.join t.pos_left v }
+    | `pos_right -> { t with pos_right = Level.join t.pos_right v }
+    | `non_empty -> { t with non_empty = Level.join t.non_empty v }
+    | `last -> { t with last = Level.join t.last v }
+    | `default -> { t with default = Level.join t.default v }
 
   (** parse attribute list to a static type *)
   let parse : attributes -> (location * structure) t =

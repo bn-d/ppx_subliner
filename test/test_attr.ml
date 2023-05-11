@@ -69,6 +69,9 @@ module Term = struct
         (fun { non_empty = v; _ } -> v);
       test_exist "last" [%expr t [@last]] (fun { last = v; _ } -> v);
       test_exist "last.s" [%expr t [@subliner.last]] (fun { last = v; _ } -> v);
+      test_exist "default" [%expr t [@default]] (fun { default = v; _ } -> v);
+      test_exist "default.s" [%expr t [@subliner.default]]
+        (fun { default = v; _ } -> v);
     ]
 end
 

@@ -8,9 +8,9 @@ module Term : sig
     (* info *)
     deprecated : 'a option;
     absent : 'a option;
-    doc : 'a option;
     docs : 'a option;
     docv : 'a option;
+    doc : 'a option;
     env : 'a option;
     (* named *)
     names : 'a option;
