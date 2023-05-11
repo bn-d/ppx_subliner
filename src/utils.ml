@@ -27,11 +27,6 @@ let check_params_empty { txt; loc } params =
   else
     Location.raise_errorf ~loc "type %s cannot have params" txt
 
-let expression_of_structure (loc, structure) =
-  match structure with
-  | [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> expr
-  | _ -> Error.attribute_payload ~loc
-
 let make_type_decl_generator f =
   Deriving.Generator.V2.make_noarg (fun ~ctxt (rec_flag, tds) ->
       let loc = Expansion_context.Deriver.derived_item_loc ctxt in

@@ -5,6 +5,7 @@ type term_attr = Ppx_subliner.Term.term_attr
 
 let loc = Location.none
 let msg = "actual is different from expected"
+let unit_expr = [%expr ()]
 
 module Conv = struct
   module M = Ppx_subliner.Term.Conv
@@ -107,14 +108,27 @@ module As_term = struct
 
   let test_set =
     let open M in
-    let s = (loc, [%str]) in
+    let s = (loc, [%str]) and u = (loc, [%str [%e unit_expr]]) in
     [
       test "empty" A.empty (Value None);
+      test "default" (A.make_t ~default:u ()) (Value (Some unit_expr));
+      test_raises "default.invalid" (A.make_t ~default:s ())
+        "unsupported payload for attribute";
       test "non_empty" (A.make_t ~non_empty:s ()) Non_empty;
+      test_raises "non_empty.invalid" (A.make_t ~non_empty:u ())
+        "flag cannot have any payload";
       test "last" (A.make_t ~last:s ()) (Last None);
-      test_raises "duplicated_flag"
+      test "last.default"
+        (A.make_t ~last:s ~default:u ())
+        (Last (Some unit_expr));
+      test_raises "last.invalid" (A.make_t ~last:u ())
+        "flag cannot have any payload";
+      test_raises "non_empty_last_conflict"
         (A.make_t ~non_empty:s ~last:s ())
         "`non_empty` and `last` cannot be used at the same time";
+      test_raises "non_empty_default_conflict"
+        (A.make_t ~non_empty:s ~default:u ())
+        "`non_empty` and `default` cannot be used at the same time";
     ]
 end
 

@@ -59,6 +59,16 @@ let parse_impl
        empty
   |> map Level.get
 
+let to_bool =
+  Option.fold ~none:false ~some:(function
+    | _, [] -> true
+    | loc, _ -> Error.attribute_flag ~loc)
+
+let to_expr_opt =
+  Option.map (function
+    | _, [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> expr
+    | loc, _ -> Error.attribute_payload ~loc)
+
 module Term = struct
   type 'a t = {
     (* info *)
@@ -78,7 +88,8 @@ module Term = struct
     (* list *)
     non_empty : 'a option;
     last : 'a option;
-        (* TODO: support sep, t_sep, file, dir, non_dir_file, default *)
+    (* misc *)
+    default : 'a option; (* TODO: support sep, t_sep, file, dir, non_dir_file *)
   }
   [@@deriving make]
 
@@ -100,6 +111,7 @@ module Term = struct
         pos_right;
         non_empty;
         last;
+        default;
       } =
     let f = Option.map f in
     {
@@ -119,6 +131,7 @@ module Term = struct
       (* list *)
       non_empty = f non_empty;
       last = f last;
+      default = f default;
     }
 
   let field_level_of_attr_name { txt = name; loc } =
@@ -137,6 +150,7 @@ module Term = struct
         "pos_right";
         "non_empty";
         "last";
+        "default";
       ]
     in
     match name with
@@ -168,6 +182,7 @@ module Term = struct
     | "pos_right" -> { t with pos_right = Level.join t.pos_right v }
     | "non_empty" -> { t with non_empty = Level.join t.non_empty v }
     | "last" -> { t with last = Level.join t.last v }
+    | "default" -> { t with default = Level.join t.default v }
     | name -> Error.attribute_name ~loc name
 
   (** parse attribute list to a static type *)

@@ -97,7 +97,7 @@ module Info = struct
     Ast_helper.with_default_loc loc (fun () ->
         let args =
           let labelled =
-            let f = Option.map Utils.expression_of_structure in
+            let f = Attribute_parser.to_expr_opt in
             [
               ("deprecated", f term_attr.deprecated);
               ("absent", f term_attr.absent);
@@ -120,17 +120,9 @@ module As_term = struct
   type t = Value of expression option | Non_empty | Last of expression option
 
   let of_term_attr ~loc (term_attr : term_attr) : t =
-    let f =
-      Option.fold ~none:false ~some:(function
-        | _, [] -> true
-        | _ ->
-            Location.raise_errorf ~loc
-              "`non_empty` and `last` cannot have any payload")
-    in
-    let non_empty = f term_attr.non_empty
-    and last = f term_attr.last
-    and (* TODO: implement default *)
-        default = None in
+    let non_empty = Attribute_parser.to_bool term_attr.non_empty
+    and last = Attribute_parser.to_bool term_attr.last
+    and default = Attribute_parser.to_expr_opt term_attr.default in
     match (non_empty, last, default) with
     | true, false, None -> Non_empty
     | true, true, _ ->
@@ -203,7 +195,7 @@ module Named = struct
           [%expr [ [%e default_name_expr] ]]
         in
         term_attr.names
-        |> Option.map Utils.expression_of_structure
+        |> Attribute_parser.to_expr_opt
         |> Option.value ~default:default_names_expr
       in
       Info.expr_of_term_attr ~loc names_expr term_attr

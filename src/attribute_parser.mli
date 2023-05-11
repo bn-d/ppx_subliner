@@ -1,3 +1,8 @@
+val to_bool : (Ppxlib.location * Ppxlib.structure) option -> bool
+
+val to_expr_opt :
+  (Ppxlib.location * Ppxlib.structure) option -> Ppxlib.expression option
+
 module Term : sig
   type 'a t = {
     (* info *)
@@ -17,6 +22,7 @@ module Term : sig
     (* list *)
     non_empty : 'a option;
     last : 'a option;
+    default : 'a option;
   }
   [@@deriving make]
 
