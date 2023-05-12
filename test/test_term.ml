@@ -1,7 +1,7 @@
 open Ppxlib
 module A = Ppx_subliner.Attribute_parser.Term
 
-type term_attr = Ppx_subliner.Term.term_attr
+type attrs = Ppx_subliner.Term.attrs
 
 let loc = Location.none
 let msg = "actual is different from expected"
@@ -71,10 +71,8 @@ end
 module Info = struct
   module M = Ppx_subliner.Term.Info
 
-  let test_gen name (term_attr : term_attr) (func : expression -> bool) =
-    let f () =
-      assert (M.expr_of_term_attr ~loc [%expr [ "NAME" ]] term_attr |> func)
-    in
+  let test_gen name (attrs : attrs) (func : expression -> bool) =
+    let f () = assert (M.expr_of_attrs ~loc [%expr [ "NAME" ]] attrs |> func) in
     Alcotest.test_case ("gen." ^ name) `Quick f
 
   let test_set =
@@ -99,12 +97,12 @@ module As_term = struct
 
   let t = Alcotest.testable (fun _ _ -> ()) ( = )
 
-  let test name (term_attr : term_attr) expected =
-    let f () = M.of_term_attr ~loc term_attr |> Alcotest.check t msg expected in
+  let test name (attrs : attrs) expected =
+    let f () = M.of_attrs ~loc attrs |> Alcotest.check t msg expected in
     Alcotest.test_case name `Quick f
 
-  let test_raises name (term_attr : term_attr) expected =
-    Utils.test_raises name expected (fun () -> M.of_term_attr ~loc term_attr)
+  let test_raises name (attrs : attrs) expected =
+    Utils.test_raises name expected (fun () -> M.of_attrs ~loc attrs)
 
   let test_set =
     let open M in

@@ -54,7 +54,7 @@ module Conv = struct
     | { ptyp_desc = Ptyp_constr (_, []); _ } ->
         (loc, Basic (basic_of_core_type ct))
     (* TODO: add support for custom conv *)
-    | _ -> Error.field_type ~loc:ct.ptyp_loc
+    | _ -> Error.field_type ~loc
 
   let basic_to_expr ~loc : basic -> expression = function
     | Bool -> [%expr bool]
@@ -89,22 +89,22 @@ module Conv = struct
         [%expr Cmdliner.Arg.([%e complex_expr])])
 end
 
-type term_attr = (location * structure) Attribute_parser.Term.t
+type attrs = (location * structure) Attribute_parser.Term.t
 
 module Info = struct
-  let expr_of_term_attr ~loc (names_expr : expression) (term_attr : term_attr) :
-      expression =
+  let expr_of_attrs ~loc (names_expr : expression) (attrs : attrs) : expression
+      =
     Ast_helper.with_default_loc loc (fun () ->
         let args =
           let labelled =
             let f = Attribute_parser.to_expr_opt in
             [
-              ("deprecated", f term_attr.deprecated);
-              ("absent", f term_attr.absent);
-              ("docs", f term_attr.docs);
-              ("docv", f term_attr.docv);
-              ("doc", f term_attr.doc);
-              ("env", f term_attr.env);
+              ("deprecated", f attrs.deprecated);
+              ("absent", f attrs.absent);
+              ("docs", f attrs.docs);
+              ("docv", f attrs.docv);
+              ("doc", f attrs.doc);
+              ("env", f attrs.env);
             ]
             |> List.filter_map (fun (name, expr_opt) ->
                    Option.map (fun expr -> (Labelled name, expr)) expr_opt)
@@ -119,10 +119,10 @@ module As_term = struct
   (* of default_expression option *)
   type t = Value of expression option | Non_empty | Last of expression option
 
-  let of_term_attr ~loc (term_attr : term_attr) : t =
-    let non_empty = Attribute_parser.to_bool term_attr.non_empty
-    and last = Attribute_parser.to_bool term_attr.last
-    and default = Attribute_parser.to_expr_opt term_attr.default in
+  let of_attrs ~loc (attrs : attrs) : t =
+    let non_empty = Attribute_parser.to_bool attrs.non_empty
+    and last = Attribute_parser.to_bool attrs.last
+    and default = Attribute_parser.to_expr_opt attrs.default in
     match (non_empty, last, default) with
     | true, false, None -> Non_empty
     | true, true, _ ->
@@ -172,10 +172,10 @@ module Named = struct
     | _, Some default_expr -> Opt { default_expr; conv }
     | _, None -> Required conv
 
-  let of_term_attr ~loc name ct (term_attr : term_attr) : t =
+  let of_attrs ~loc name ct (attrs : attrs) : t =
     let category =
       let conv = Conv.of_core_type ct
-      and as_term = As_term.of_term_attr ~loc term_attr in
+      and as_term = As_term.of_attrs ~loc attrs in
       match as_term with
       | Non_empty -> category_of_non_empty ~loc conv
       | Last default ->
@@ -186,19 +186,21 @@ module Named = struct
           in
           Last { default_expr; conv }
       | Value default -> category_of_value ~loc default conv
+    (* Arg.info *)
     and info_expr =
       let names_expr =
+        (* field name will be the default arg name *)
         let default_names_expr =
           let default_name_expr =
             Ast_builder.Default.estring ~loc:name.loc name.txt
           in
           [%expr [ [%e default_name_expr] ]]
         in
-        term_attr.names
+        attrs.names
         |> Attribute_parser.to_expr_opt
         |> Option.value ~default:default_names_expr
       in
-      Info.expr_of_term_attr ~loc names_expr term_attr
+      Info.expr_of_attrs ~loc names_expr attrs
     in
     { category; info_expr }
 
@@ -247,26 +249,24 @@ module Positional = struct
   type category = Pos of int | Pos_all | Pos_left of int | Pos_right of int
   type t = { category : category; info_expr : expression }
 
-  let of_term_attr ~loc:_ _name _ct (_term_attr : term_attr) : t = failwith ""
+  let of_attrs ~loc:_ _name _ct (_attrs : attrs) : t = failwith ""
   let to_expr ~loc:_ (_ : t) = failwith ""
 end
 
 module T = struct
-  let expr_of_term_attr ~loc name ct (term_attr : term_attr) =
+  let expr_of_attrs ~loc name ct (attrs : attrs) =
     let pos_count =
       let count opt = if Option.is_some opt then 1 else 0 in
-      count term_attr.pos
-      + count term_attr.pos_all
-      + count term_attr.pos_left
-      + count term_attr.pos_right
+      count attrs.pos
+      + count attrs.pos_all
+      + count attrs.pos_left
+      + count attrs.pos_right
     in
     match pos_count with
     (* named *)
-    | 0 -> Named.of_term_attr ~loc name ct term_attr |> Named.to_expr ~loc
+    | 0 -> Named.of_attrs ~loc name ct attrs |> Named.to_expr ~loc
     (* positional *)
-    | 1 ->
-        Positional.of_term_attr ~loc name ct term_attr
-        |> Positional.to_expr ~loc
+    | 1 -> Positional.of_attrs ~loc name ct attrs |> Positional.to_expr ~loc
     (* multiple pos error *)
     | _ ->
         Location.raise_errorf ~loc
@@ -307,7 +307,7 @@ let term_vb_expr_of_label_decl (ld : label_declaration) =
         and expr =
           ld.pld_attributes
           |> Attribute_parser.Term.parse
-          |> T.expr_of_term_attr ~loc ld.pld_name ld.pld_type
+          |> T.expr_of_attrs ~loc ld.pld_name ld.pld_type
         in
         Ast_helper.Vb.mk pat expr
       and var_expr =

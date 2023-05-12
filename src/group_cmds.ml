@@ -8,6 +8,41 @@ let gen_name_str = function
 
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
+type info_attrs = expression Attribute_parser.Cmd_info.t
+
+module Info = struct
+  let expr_of_attrs ~loc (default_name_expr : expression) (attrs : attributes) :
+      expression =
+    Ast_helper.with_default_loc loc (fun () ->
+        (* get cmd info args from attributes *)
+        let info_attrs =
+          Attribute_parser.Cmd_info.parse attrs
+          |> Attribute_parser.Cmd_info.map Attribute_parser.to_expr
+        in
+        let name_expr =
+          Option.fold ~none:default_name_expr ~some:Fun.id info_attrs.name
+        in
+        let args =
+          let labelled =
+            [
+              ("deprecated", info_attrs.deprecated);
+              ("man_xrefs", info_attrs.man_xrefs);
+              ("man", info_attrs.man);
+              ("envs", info_attrs.envs);
+              ("exits", info_attrs.exits);
+              ("sdocs", info_attrs.sdocs);
+              ("docs", info_attrs.docs);
+              ("doc", info_attrs.doc);
+              ("version", info_attrs.version);
+            ]
+            |> List.filter_map (fun (name, expr_opt) ->
+                   Option.map (fun expr -> (Labelled name, expr)) expr_opt)
+          and no_label = [ (Nolabel, name_expr) ] in
+          labelled @ no_label
+        in
+        Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args)
+end
+
 let handle_params_term_expr_of_const_decl
     ~loc
     func_expr
@@ -59,16 +94,11 @@ let cmd_vb_expr_of_const_decl
         and expr =
           (* Cmd.info *)
           let cmd_info_expr =
-            (* get cmd info args from attributes *)
-            let args =
-              (* lower case constructor name will be the default cmd name *)
-              let default_name_expr =
-                Ast_builder.Default.estring ~loc:cd.pcd_name.loc name_str
-              in
-              Attribute_parser.Cmd_info.to_args ~default_name_expr
-                cd.pcd_attributes
+            (* lower case constructor name will be the default cmd name *)
+            let default_name_expr =
+              Ast_builder.Default.estring ~loc:cd.pcd_name.loc name_str
             in
-            Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
+            Info.expr_of_attrs ~loc default_name_expr cd.pcd_attributes
             (* ('params -> 'result) * 'params Term.t *)
           and handle_expr, params_term_expr =
             handle_params_term_expr_of_const_decl ~loc func_expr cd
