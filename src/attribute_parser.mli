@@ -28,7 +28,9 @@ module Term : sig
 
   val empty : 'a t
   val map : ('a -> 'b) -> 'a t -> 'b t
+
   val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) t
+  (** parse attribute list to a static type *)
 end
 
 module Cmd_info : sig

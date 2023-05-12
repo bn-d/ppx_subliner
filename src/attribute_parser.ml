@@ -22,8 +22,8 @@ module Level = struct
     | General a -> General (f a)
     | Prefixed a -> Prefixed (f a)
 
-  let general = Option.map (fun v -> General v)
-  let prefixed = Option.map (fun v -> Prefixed v)
+  let general opt = Option.map (fun v -> General v) opt
+  let prefixed opt = Option.map (fun v -> Prefixed v) opt
 end
 
 let get_expr name (attrs : attributes) =
@@ -40,18 +40,18 @@ let get_expr name (attrs : attributes) =
 let parse_impl
     ~empty
     ~map
-    ~field_level_of_attr_name
-    ~update_field
+    ~tag_level_of_attr_name
+    ~update_field_of_tag
     (attrs : attributes) =
   attrs
   |> List.fold_left
        (fun acc attr ->
          let loc = attr.attr_loc in
-         field_level_of_attr_name attr.attr_name
+         tag_level_of_attr_name attr.attr_name
          |> function
          | None -> acc
          | Some field ->
-             update_field (Level.get field)
+             update_field_of_tag (Level.get field)
                (Level.map
                   (fun _ ->
                     match attr.attr_payload with
@@ -138,7 +138,7 @@ module Term = struct
     }
 
   let tag_of_string = function
-    | "deprecated" -> Some `deprecated
+    | "deprecated" | "deprecated_" -> Some `deprecated
     | "absent" -> Some `absent
     | "docs" -> Some `docs
     | "docv" -> Some `docv
@@ -154,13 +154,11 @@ module Term = struct
     | "default" -> Some `default
     | _ -> None
 
-  let field_level_of_attr_name { txt = name; loc } =
+  let tag_level_of_attr_name { txt = name; loc } =
     let tag = tag_of_string name in
     match name with
     | _ when Option.is_some tag -> Level.general tag
     | "ocaml.doc" -> Some (Derived `doc)
-    | "deprecated_" -> Some (General `deprecated)
-    | "subliner.deprecated_" -> Some (Prefixed `deprecated)
     | _ when Utils.string_starts_with ~prefix name ->
         let len = String.length name in
         let name = String.sub name prefix_len (len - prefix_len) in
@@ -171,8 +169,8 @@ module Term = struct
           Error.attribute_name ~loc name
     | _ -> None
 
-  let update_field name v t =
-    match name with
+  let update_field_of_tag tag v t =
+    match tag with
     | `deprecated -> { t with deprecated = Level.join t.deprecated v }
     | `absent -> { t with absent = Level.join t.absent v }
     | `doc -> { t with doc = Level.join t.doc v }
@@ -188,12 +186,96 @@ module Term = struct
     | `last -> { t with last = Level.join t.last v }
     | `default -> { t with default = Level.join t.default v }
 
-  (** parse attribute list to a static type *)
   let parse : attributes -> (location * structure) t =
-    parse_impl ~empty ~map ~field_level_of_attr_name ~update_field
+    parse_impl ~empty ~map ~tag_level_of_attr_name ~update_field_of_tag
 end
 
 module Cmd_info = struct
+  type 'a t = {
+    deprecated : 'a option;
+    man_xrefs : 'a option;
+    man : 'a option;
+    envs : 'a option;
+    exits : 'a option;
+    sdocs : 'a option;
+    docs : 'a option;
+    doc : 'a option;
+    version : 'a option;
+    name : 'a option;
+  }
+  [@@deriving make]
+
+  let empty = make_t ()
+
+  let map
+      f
+      {
+        deprecated;
+        man_xrefs;
+        man;
+        envs;
+        exits;
+        sdocs;
+        docs;
+        doc;
+        version;
+        name;
+      } =
+    let f = Option.map f in
+    {
+      deprecated = f deprecated;
+      man_xrefs = f man_xrefs;
+      man = f man;
+      envs = f envs;
+      exits = f exits;
+      sdocs = f sdocs;
+      docs = f docs;
+      doc = f doc;
+      version = f version;
+      name = f name;
+    }
+
+  let tag_of_string = function
+    | "deprecated" | "deprecated_" -> Some `deprecated
+    | "man_xrefs" -> Some `man_xrefs
+    | "man" -> Some `man
+    | "envs" -> Some `envs
+    | "exits" -> Some `exits
+    | "sdocs" -> Some `sdocs
+    | "docs" -> Some `docs
+    | "doc" -> Some `doc
+    | "version" -> Some `version
+    | "name" -> Some `name
+    | _ -> None
+
+  let update_field_of_tag tag v t =
+    match tag with
+    | `deprecated -> { t with deprecated = Level.join t.deprecated v }
+    | `man_xrefs -> { t with man_xrefs = Level.join t.man_xrefs v }
+    | `man -> { t with man = Level.join t.man v }
+    | `envs -> { t with envs = Level.join t.envs v }
+    | `exits -> { t with exits = Level.join t.exits v }
+    | `sdocs -> { t with sdocs = Level.join t.sdocs v }
+    | `docs -> { t with docs = Level.join t.docs v }
+    | `doc -> { t with doc = Level.join t.doc v }
+    | `version -> { t with version = Level.join t.version v }
+    | `name -> { t with name = Level.join t.name v }
+
+  let tag_level_of_attr_name { txt = name; loc } =
+    let tag = tag_of_string name in
+    match name with
+    | _ when Option.is_some tag -> Level.general tag
+    | "ocaml.doc" -> Some (Derived `doc)
+    | _ when Utils.string_starts_with ~prefix name ->
+        let len = String.length name in
+        let name = String.sub name prefix_len (len - prefix_len) in
+        let tag = tag_of_string name in
+        if Option.is_some tag then
+          Level.prefixed tag
+        else
+          Error.attribute_name ~loc name
+    | _ -> None
+
   let to_args_label = function
     | "version" | "subliner.version" -> Some "version"
     | "deprecated" | "subliner.deprecated" | "deprecated_" -> Some "deprecated"

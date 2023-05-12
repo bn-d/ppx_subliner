@@ -54,7 +54,7 @@ module Conv = struct
     | { ptyp_desc = Ptyp_constr (_, []); _ } ->
         (loc, Basic (basic_of_core_type ct))
     (* TODO: add support for custom conv *)
-    | _ -> Error.field_type ~loc:ct.ptyp_loc
+    | _ -> Error.field_type ~loc
 
   let basic_to_expr ~loc : basic -> expression = function
     | Bool -> [%expr bool]
