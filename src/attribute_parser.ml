@@ -40,9 +40,24 @@ let get_expr name (attrs : attributes) =
 let parse_impl
     ~empty
     ~map
-    ~tag_level_of_attr_name
+    ~tag_of_string
     ~update_field_of_tag
     (attrs : attributes) =
+  let tag_level_of_attr_name { txt = name; loc } =
+    let tag = tag_of_string name in
+    match name with
+    | _ when Option.is_some tag -> Level.general tag
+    | "ocaml.doc" -> Some (Derived `doc)
+    | _ when Utils.string_starts_with ~prefix name ->
+        let len = String.length name in
+        let name = String.sub name prefix_len (len - prefix_len) in
+        let tag = tag_of_string name in
+        if Option.is_some tag then
+          Level.prefixed tag
+        else
+          Error.attribute_name ~loc name
+    | _ -> None
+  in
   attrs
   |> List.fold_left
        (fun acc attr ->
@@ -67,10 +82,11 @@ let to_bool =
     | _, [] -> true
     | loc, _ -> Error.attribute_flag ~loc)
 
-let to_expr_opt =
-  Option.map (function
-    | _, [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> expr
-    | loc, _ -> Error.attribute_payload ~loc)
+let to_expr = function
+  | _, [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> expr
+  | loc, _ -> Error.attribute_payload ~loc
+
+let to_expr_opt = Option.map to_expr
 
 module Term = struct
   type 'a t = {
@@ -154,21 +170,6 @@ module Term = struct
     | "default" -> Some `default
     | _ -> None
 
-  let tag_level_of_attr_name { txt = name; loc } =
-    let tag = tag_of_string name in
-    match name with
-    | _ when Option.is_some tag -> Level.general tag
-    | "ocaml.doc" -> Some (Derived `doc)
-    | _ when Utils.string_starts_with ~prefix name ->
-        let len = String.length name in
-        let name = String.sub name prefix_len (len - prefix_len) in
-        let tag = tag_of_string name in
-        if Option.is_some tag then
-          Level.prefixed tag
-        else
-          Error.attribute_name ~loc name
-    | _ -> None
-
   let update_field_of_tag tag v t =
     match tag with
     | `deprecated -> { t with deprecated = Level.join t.deprecated v }
@@ -186,8 +187,8 @@ module Term = struct
     | `last -> { t with last = Level.join t.last v }
     | `default -> { t with default = Level.join t.default v }
 
-  let parse : attributes -> (location * structure) t =
-    parse_impl ~empty ~map ~tag_level_of_attr_name ~update_field_of_tag
+  let parse attrs =
+    parse_impl ~empty ~map ~tag_of_string ~update_field_of_tag attrs
 end
 
 module Cmd_info = struct
@@ -261,58 +262,8 @@ module Cmd_info = struct
     | `version -> { t with version = Level.join t.version v }
     | `name -> { t with name = Level.join t.name v }
 
-  let tag_level_of_attr_name { txt = name; loc } =
-    let tag = tag_of_string name in
-    match name with
-    | _ when Option.is_some tag -> Level.general tag
-    | "ocaml.doc" -> Some (Derived `doc)
-    | _ when Utils.string_starts_with ~prefix name ->
-        let len = String.length name in
-        let name = String.sub name prefix_len (len - prefix_len) in
-        let tag = tag_of_string name in
-        if Option.is_some tag then
-          Level.prefixed tag
-        else
-          Error.attribute_name ~loc name
-    | _ -> None
-
-  let to_args_label = function
-    | "version" | "subliner.version" -> Some "version"
-    | "deprecated" | "subliner.deprecated" | "deprecated_" -> Some "deprecated"
-    | "docs" | "subliner.docs" -> Some "docs"
-    | "sdocs" | "subliner.sdocs" -> Some "sdocs"
-    | "exits" | "subliner.exits" -> Some "exits"
-    | "envs" | "subliner.envs" -> Some "envs"
-    | "man" | "subliner.man" -> Some "man"
-    | "man_xrefs" | "subliner.man_xrefs" -> Some "man_xrefs"
-    (* name and doc will be handled separately *)
-    | "name" | "doc" | "ocaml.doc" | _ -> None
-
-  let to_args ~(default_name_expr : expression) (attrs : attributes) :
-      (arg_label * expression) list =
-    (* get arguments that require special handling *)
-    let name_arg =
-      let expr =
-        get_expr "name" attrs |> Option.value ~default:default_name_expr
-      in
-      [ (Nolabel, expr) ]
-    and doc_arg =
-      get_expr "doc" attrs
-      |> (function Some e -> Some e | None -> get_expr "ocaml.doc" attrs)
-      |> function Some e -> [ (Labelled "doc", e) ] | None -> []
-    in
-    List.filter_map
-      (fun (attr : attribute) ->
-        to_args_label attr.attr_name.txt
-        |> Option.map (fun label ->
-               let loc = attr.attr_loc in
-               match attr.attr_payload with
-               | PStr [ { pstr_desc = Pstr_eval (expr, _); _ } ] ->
-                   (Labelled label, expr)
-               | _ -> Error.attribute_payload ~loc))
-      attrs
-    @ doc_arg
-    @ name_arg
+  let parse attrs =
+    parse_impl ~empty ~map ~tag_of_string ~update_field_of_tag attrs
 end
 
 module Default_term = struct

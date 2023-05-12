@@ -17,13 +17,9 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
   | Cmds ->
       (* Cmd.info *)
       let cmd_info_expr =
-        (* get cmd info from attributes *)
-        let args =
-          (* lower case constructor name will be the default cmd name *)
-          let default_name_expr = [%expr Filename.basename Sys.argv.(0)] in
-          Attribute_parser.Cmd_info.to_args ~default_name_expr attrs
-        in
-        Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
+        (* exe name will be the default cmd name *)
+        let default_name_expr = [%expr Filename.basename Sys.argv.(0)] in
+        Group_cmds.Info.expr_of_attrs ~loc default_name_expr attrs
       and default_term_expr =
         Attribute_parser.Default_term.get attrs
         |> Option.value
@@ -41,13 +37,9 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
   | Term ->
       (* Cmd.info *)
       let cmd_info_expr =
-        (* get cmd info from attributes *)
-        let args =
-          (* lower case constructor name will be the default cmd name *)
-          let default_name_expr = [%expr Filename.basename Sys.argv.(0)] in
-          Attribute_parser.Cmd_info.to_args ~default_name_expr attrs
-        in
-        Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args
+        (* exe name will be the default cmd name *)
+        let default_name_expr = [%expr Filename.basename Sys.argv.(0)] in
+        Group_cmds.Info.expr_of_attrs ~loc default_name_expr attrs
       and params_term_expr =
         lid |> Utils.map_lid_name Term.gen_name_str |> Ast_helper.Exp.ident
       in
