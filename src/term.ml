@@ -291,11 +291,11 @@ module Positional = struct
       match type_ with
       | `pos _ -> (
           match (as_term, conv) with
-          | `value (Some default_expr), conv -> (`value (), default_expr, conv)
+          | `value (Some default_expr), _ -> (`value (), default_expr, conv)
           | `value None, Option _ -> (`value (), [%expr None], conv)
           | `value None, _ -> (`required, [%expr None], Option conv)
           | `non_empty, List _ -> (`non_empty, [%expr []], conv)
-          | `last default, conv ->
+          | `last default, _ ->
               let default_expr =
                 Option.fold ~none:[%expr []]
                   ~some:(fun expr -> [%expr [ [%e expr] ]])
@@ -309,7 +309,7 @@ module Positional = struct
               let default_expr = Option.value ~default:[%expr []] default in
               (`value (), default_expr, in_conv)
           | `non_empty, List in_conv -> (`non_empty, [%expr []], in_conv)
-          | `last default, conv ->
+          | `last default, _ ->
               let default_expr = Option.value ~default:[%expr []] default in
               (`last (), [%expr [ [%e default_expr] ]], conv)
           | _, _ ->
