@@ -1,5 +1,5 @@
 open Ppxlib
-module A = Ppx_subliner.Attribute_parser.Term
+module Attr = Ppx_subliner.Attribute_parser.Term
 
 type attrs = Ppx_subliner.Term.attrs
 
@@ -78,11 +78,11 @@ module Info = struct
   let test_set =
     let u = (loc, [%str ()]) in
     [
-      test_gen "empty" A.empty (function
+      test_gen "empty" Attr.empty (function
         | [%expr Cmdliner.Arg.info [ "NAME" ]] -> true
         | _ -> false);
       test_gen "all"
-        (A.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u ())
+        (Attr.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u ())
         (function
         | [%expr
             Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:()
@@ -105,27 +105,28 @@ module As_term = struct
     Utils.test_raises name expected (fun () -> M.of_attrs ~loc attrs)
 
   let test_set =
-    let open M in
     let s = (loc, [%str]) and u = (loc, [%str [%e unit_expr]]) in
     [
-      test "empty" A.empty (Value None);
-      test "default" (A.make_t ~default:u ()) (Value (Some unit_expr));
-      test_raises "default.invalid" (A.make_t ~default:s ())
+      test "empty" Attr.empty (`value None);
+      test "default" (Attr.make_t ~default:u ()) (`value (Some unit_expr));
+      test_raises "default.invalid"
+        (Attr.make_t ~default:s ())
         "unsupported payload for attribute";
-      test "non_empty" (A.make_t ~non_empty:s ()) Non_empty;
-      test_raises "non_empty.invalid" (A.make_t ~non_empty:u ())
+      test "non_empty" (Attr.make_t ~non_empty:s ()) `non_empty;
+      test_raises "non_empty.invalid"
+        (Attr.make_t ~non_empty:u ())
         "flag cannot have any payload";
-      test "last" (A.make_t ~last:s ()) (Last None);
+      test "last" (Attr.make_t ~last:s ()) (`last None);
       test "last.default"
-        (A.make_t ~last:s ~default:u ())
-        (Last (Some unit_expr));
-      test_raises "last.invalid" (A.make_t ~last:u ())
+        (Attr.make_t ~last:s ~default:u ())
+        (`last (Some unit_expr));
+      test_raises "last.invalid" (Attr.make_t ~last:u ())
         "flag cannot have any payload";
       test_raises "non_empty_last_conflict"
-        (A.make_t ~non_empty:s ~last:s ())
+        (Attr.make_t ~non_empty:s ~last:s ())
         "`non_empty` and `last` cannot be used at the same time";
       test_raises "non_empty_default_conflict"
-        (A.make_t ~non_empty:s ~default:u ())
+        (Attr.make_t ~non_empty:s ~default:u ())
         "`non_empty` and `default` cannot be used at the same time";
     ]
 end

@@ -141,7 +141,7 @@ end
 
 module As_term = struct
   let of_attrs ~loc (attrs : attrs) :
-      [> `value of expression option | `non_empty | `last of expression option ]
+      [ `value of expression option | `non_empty | `last of expression option ]
       =
     let non_empty = Attribute_parser.to_bool attrs.non_empty
     and last = Attribute_parser.to_bool attrs.last
