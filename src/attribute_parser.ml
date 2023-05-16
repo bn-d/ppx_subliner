@@ -108,7 +108,8 @@ module Term = struct
     non_empty : 'a option;
     last : 'a option;
     (* misc *)
-    default : 'a option; (* TODO: support sep, t_sep, file, dir, non_dir_file *)
+    default : 'a option;
+        (* TODO: support list_sep, array_sep, tuple_sep, file, dir, non_dir_file, rev *)
   }
   [@@deriving make]
 
@@ -174,9 +175,9 @@ module Term = struct
     match tag with
     | `deprecated -> { t with deprecated = Level.join t.deprecated v }
     | `absent -> { t with absent = Level.join t.absent v }
-    | `doc -> { t with doc = Level.join t.doc v }
     | `docs -> { t with docs = Level.join t.docs v }
     | `docv -> { t with docv = Level.join t.docv v }
+    | `doc -> { t with doc = Level.join t.doc v }
     | `env -> { t with env = Level.join t.env v }
     | `names -> { t with names = Level.join t.names v }
     | `pos -> { t with pos = Level.join t.pos v }

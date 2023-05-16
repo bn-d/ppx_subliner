@@ -13,3 +13,10 @@ let attribute_payload ~loc =
 
 let attribute_flag ~loc =
   Location.raise_errorf ~loc "flag cannot have any payload"
+
+let non_empty_list ~loc =
+  Location.raise_errorf ~loc "`non_empty` can only be used with `list`"
+
+let pos_list ~loc =
+  Location.raise_errorf ~loc
+    "`pos_left`, `pos_right` and `pos_all` must be a list"
