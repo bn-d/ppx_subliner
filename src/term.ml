@@ -8,6 +8,8 @@ let gen_name_str = function
 
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
+type attrs = (location * structure) Attribute_parser.Term.t
+
 module Conv = struct
   type basic =
     | Bool
@@ -89,7 +91,73 @@ module Conv = struct
         [%expr Cmdliner.Arg.([%e complex_expr])])
 end
 
-type attrs = (location * structure) Attribute_parser.Term.t
+module Conv_new = struct
+  type t =
+    | Bool
+    | Char
+    | Int
+    | Nativeint
+    | Int32
+    | Int64
+    | Float
+    | String
+    | File
+    | Dir
+    | Non_dir_file
+    | Option of t
+    | List of t
+    | Array of t
+  (* TODO: support Pair | T3 | T4 *)
+
+  let rec of_core_type : core_type -> t = function
+    | [%type: bool] | [%type: Bool.t] -> Bool
+    | [%type: char] | [%type: Char.t] -> Char
+    | [%type: int] | [%type: Int.t] -> Int
+    | [%type: nativeint] | [%type: Nativeint.t] -> Nativeint
+    | [%type: int32] | [%type: Int32.t] -> Int32
+    | [%type: int64] | [%type: Int64.t] -> Int64
+    | [%type: float] | [%type: Float.t] -> Float
+    | [%type: string] | [%type: String.t] -> String
+    | [%type: [%t? ct] option] | [%type: [%t? ct] Option.t] ->
+        Option (of_core_type ct)
+    | [%type: [%t? ct] list] | [%type: [%t? ct] List.t] ->
+        List (of_core_type ct)
+    | [%type: [%t? ct] array] | [%type: [%t? ct] Array.t] ->
+        Array (of_core_type ct)
+    | { ptyp_loc = loc; _ } -> Error.field_type ~loc
+
+  let to_expr ~loc (_attrs : attrs) t : expression =
+    (* TODO: impl sep *)
+    let list_sep_expr = None |> Option.value ~default:[%expr None]
+    and array_sep_expr = None |> Option.value ~default:[%expr None] in
+    let rec impl ~loc = function
+      | Bool -> [%expr bool]
+      | Char -> [%expr char]
+      | Int -> [%expr int]
+      | Nativeint -> [%expr nativeint]
+      | Int32 -> [%expr int32]
+      | Int64 -> [%expr int64]
+      | Float -> [%expr float]
+      | String -> [%expr string]
+      | File -> [%expr file]
+      | Dir -> [%expr dir]
+      | Non_dir_file -> [%expr non_dir_file]
+      | Option t ->
+          let expr = impl ~loc t in
+          [%expr some [%e expr]]
+      | List t ->
+          let expr = impl ~loc t in
+          [%expr list ?sep:[%e list_sep_expr] [%e expr]]
+      | Array t ->
+          let expr = impl ~loc t in
+          [%expr array ?sep:[%e array_sep_expr] [%e expr]]
+    in
+
+    let expr = impl ~loc t in
+    [%expr Cmdliner.Arg.([%e expr])]
+end
+
+type conv = Conv.t
 
 module Info = struct
   let expr_of_attrs ~loc (names_expr : expression) (attrs : attrs) : expression
@@ -116,23 +184,30 @@ module Info = struct
 end
 
 module As_term = struct
-  (* of default_expression option *)
-  type t = Value of expression option | Non_empty | Last of expression option
-
-  let of_attrs ~loc (attrs : attrs) : t =
+  let of_attrs ~loc (attrs : attrs) :
+      [ `value of expression option | `non_empty | `last of expression option ]
+      =
     let non_empty = Attribute_parser.to_bool attrs.non_empty
     and last = Attribute_parser.to_bool attrs.last
     and default = Attribute_parser.to_expr_opt attrs.default in
     match (non_empty, last, default) with
-    | true, false, None -> Non_empty
+    | true, false, None -> `non_empty
     | true, true, _ ->
         Location.raise_errorf ~loc
           "`non_empty` and `last` cannot be used at the same time"
     | true, _, Some _ ->
         Location.raise_errorf ~loc
           "`non_empty` and `default` cannot be used at the same time"
-    | false, true, _ -> Last default
-    | false, false, _ -> Value default
+    | false, true, _ -> `last default
+    | false, false, _ -> `value default
+
+  let to_expr ~loc :
+      [< `value of 'a | `required | `non_empty | `last of 'b ] -> expression =
+    function
+    | `value _ -> [%expr Cmdliner.Arg.value]
+    | `required -> [%expr Cmdliner.Arg.required]
+    | `non_empty -> [%expr Cmdliner.Arg.non_empty]
+    | `last _ -> [%expr Cmdliner.Arg.last]
 end
 
 module Named = struct
@@ -177,15 +252,15 @@ module Named = struct
       let conv = Conv.of_core_type ct
       and as_term = As_term.of_attrs ~loc attrs in
       match as_term with
-      | Non_empty -> category_of_non_empty ~loc conv
-      | Last default ->
+      | `non_empty -> category_of_non_empty ~loc conv
+      | `last default ->
           let default_expr =
             Option.fold ~none:[%expr []]
               ~some:(fun default_expr -> [%expr [ [%e default_expr] ]])
               default
           in
           Last { default_expr; conv }
-      | Value default -> category_of_value ~loc default conv
+      | `value default -> category_of_value ~loc default conv
     (* Arg.info *)
     and info_expr =
       let names_expr =
@@ -246,11 +321,67 @@ module Named = struct
 end
 
 module Positional = struct
-  type category = Pos of int | Pos_all | Pos_left of int | Pos_right of int
-  type t = { category : category; info_expr : expression }
+  let pos_fun_expr_of_type_ ~loc = function
+    | `pos _ -> [%expr Cmdliner.Arg.pos]
+    | `pos_left _ -> [%expr Cmdliner.Arg.pos_left]
+    | `pos_right _ -> [%expr Cmdliner.Arg.pos_right]
+    | `pos_all -> [%expr Cmdliner.Arg.pos_all]
 
-  let of_attrs ~loc:_ _name _ct (_attrs : attrs) : t = failwith ""
-  let to_expr ~loc:_ (_ : t) = failwith ""
+  let expr_of_attrs ~loc ct type_ (attrs : attrs) : expression =
+    let rev = false (* TODO: support rev *) in
+    let as_term, default_expr, conv =
+      let as_term = As_term.of_attrs ~loc attrs
+      and conv = Conv_new.of_core_type ct in
+      match type_ with
+      | `pos _ -> (
+          match (as_term, conv) with
+          | `value (Some default_expr), _ -> (`value (), default_expr, conv)
+          | `value None, Option _ -> (`value (), [%expr None], conv)
+          | `value None, _ -> (`required, [%expr None], Option conv)
+          | `non_empty, List _ -> (`non_empty, [%expr []], conv)
+          | `last default, _ ->
+              let default_expr =
+                Option.fold ~none:[%expr []]
+                  ~some:(fun expr -> [%expr [ [%e expr] ]])
+                  default
+              in
+              (`last (), default_expr, List conv)
+          | `non_empty, _ -> Error.non_empty_list ~loc)
+      | `pos_left _ | `pos_right _ | `pos_all -> (
+          match (as_term, conv) with
+          | `value default, List in_conv ->
+              let default_expr = Option.value ~default:[%expr []] default in
+              (`value (), default_expr, in_conv)
+          | `non_empty, List in_conv -> (`non_empty, [%expr []], in_conv)
+          | `last default, _ ->
+              let default_expr =
+                Option.fold ~none:[%expr []]
+                  ~some:(fun expr -> [%expr [ [%e expr] ]])
+                  default
+              in
+              (`last (), default_expr, conv)
+          | _, _ ->
+              Location.raise_errorf ~loc
+                "`pos_left`, `pos_right` and `pos_all` type must be a list")
+    in
+
+    let as_term_expr = As_term.to_expr ~loc as_term
+    and info_expr = Info.expr_of_attrs ~loc [%expr []] attrs
+    and conv_expr = Conv_new.to_expr ~loc attrs conv
+    and pos_fun_expr =
+      match (type_, rev) with
+      | `pos_all, true ->
+          Location.raise_errorf ~loc "`rev` can only be used with `pos_all`"
+      | `pos_all, false -> [%expr Cmdliner.Arg.pos_all]
+      | `pos pos_expr, _ | `pos_left pos_expr, _ | `pos_right pos_expr, _ ->
+          let rev_expr = Ast_builder.Default.ebool ~loc rev
+          and fun_expr = pos_fun_expr_of_type_ ~loc type_ in
+          [%expr [%e fun_expr] ~rev:[%e rev_expr] [%e pos_expr]]
+    in
+
+    [%expr
+      [%e as_term_expr]
+        ([%e pos_fun_expr] [%e conv_expr] [%e default_expr] [%e info_expr])]
 end
 
 module T = struct
@@ -262,13 +393,27 @@ module T = struct
       + count attrs.pos_left
       + count attrs.pos_right
     in
-    match pos_count with
+    match (attrs, pos_count) with
     (* named *)
-    | 0 -> Named.of_attrs ~loc name ct attrs |> Named.to_expr ~loc
+    | _, 0 -> Named.of_attrs ~loc name ct attrs |> Named.to_expr ~loc
     (* positional *)
-    | 1 -> Positional.of_attrs ~loc name ct attrs |> Positional.to_expr ~loc
+    | { names = Some _; _ }, 1 ->
+        Location.raise_errorf ~loc "cannot apply `names` to positional argument"
+    (* TODO: opt_all error *)
+    | { pos = Some pos; _ }, 1 ->
+        let pos_expr = Attribute_parser.to_expr pos in
+        Positional.expr_of_attrs ~loc ct (`pos pos_expr) attrs
+    | { pos_left = Some pos; _ }, 1 ->
+        let pos_expr = Attribute_parser.to_expr pos in
+        Positional.expr_of_attrs ~loc ct (`pos_left pos_expr) attrs
+    | { pos_right = Some pos; _ }, 1 ->
+        let pos_expr = Attribute_parser.to_expr pos in
+        Positional.expr_of_attrs ~loc ct (`pos_right pos_expr) attrs
+    | { pos_all = Some pos; _ }, 1 ->
+        let _ = Attribute_parser.to_bool (Some pos) in
+        Positional.expr_of_attrs ~loc ct `pos_all attrs
     (* multiple pos error *)
-    | _ ->
+    | _, _ ->
         Location.raise_errorf ~loc
           "only one of [pos|pos_all|pos_left|pos_right] can be specified at \
            the same time"

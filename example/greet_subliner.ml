@@ -1,4 +1,5 @@
-type subparams = { night : bool; name : string [@pos 0] } [@@deriving cmdliner]
+type subparams = { night : bool; name : string [@pos 0] [@docv "NAME"] }
+[@@deriving subliner]
 
 type params =
   | English of subparams  (** Greet in English *)
