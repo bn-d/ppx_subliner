@@ -5,8 +5,8 @@ let loc = Location.none
 let test_impl
     (parser : attributes -> 'a)
     name
-    (expression : expression)
-    (check : 'a -> unit) =
+    (check : 'a -> unit)
+    (expression : expression) =
   let f () = expression.pexp_attributes |> parser |> check in
   Alcotest.test_case name `Quick f
 
@@ -17,61 +17,74 @@ module Term = struct
     test_impl (fun expr ->
         M.(parse expr |> map (fun (_loc, structure) -> structure)))
 
-  let test_exist name expr func =
-    test ("attr." ^ name) expr (fun t -> assert (t |> func |> Option.is_some))
+  let test_exist name func expr =
+    test ("attr." ^ name) (fun t -> assert (t |> func |> Option.is_some)) expr
 
-  let test_raises name (expression : expression) expected =
-    Utils.test_raises name expected (fun () ->
-        M.parse expression.pexp_attributes)
+  let test_raises name ~exn (expression : expression) =
+    Utils.test_raises name ~exn (fun () -> M.parse expression.pexp_attributes)
 
   let test_set =
     [
-      test "empty" [%expr t] (fun t ->
-          M.map (fun _ -> assert false) t |> ignore);
-      test_exist "deprecated" [%expr t [@deprecated]]
-        (fun { deprecated = v; _ } -> v);
-      test_exist "deprecated.s" [%expr t [@subliner.deprecated]]
-        (fun { deprecated = v; _ } -> v);
-      test_exist "deprecated_" [%expr t [@deprecated_]]
-        (fun { deprecated = v; _ } -> v);
-      test_exist "deprecated_.s" [%expr t [@subliner.deprecated_]]
-        (fun { deprecated = v; _ } -> v);
-      test_exist "absent" [%expr t [@absent]] (fun { absent = v; _ } -> v);
-      test_exist "absent.s" [%expr t [@subliner.absent]]
-        (fun { absent = v; _ } -> v);
-      test_exist "doc" [%expr t [@doc]] (fun { doc = v; _ } -> v);
-      test_exist "doc.s" [%expr t [@subliner.doc]] (fun { doc = v; _ } -> v);
-      test_exist "ocaml.doc" [%expr t [@ocaml.doc]] (fun { doc = v; _ } -> v);
-      test_exist "docs" [%expr t [@docs]] (fun { docs = v; _ } -> v);
-      test_exist "docs.s" [%expr t [@subliner.docs]] (fun { docs = v; _ } -> v);
-      test_exist "docv" [%expr t [@docv]] (fun { docv = v; _ } -> v);
-      test_exist "docv.s" [%expr t [@subliner.docv]] (fun { docv = v; _ } -> v);
-      test_exist "env" [%expr t [@env]] (fun { env = v; _ } -> v);
-      test_exist "env.s" [%expr t [@subliner.env]] (fun { env = v; _ } -> v);
-      test_exist "names" [%expr t [@names]] (fun { names = v; _ } -> v);
-      test_exist "names.s" [%expr t [@subliner.names]] (fun { names = v; _ } ->
-          v);
-      test_exist "pos" [%expr t [@pos]] (fun { pos = v; _ } -> v);
-      test_exist "pos.s" [%expr t [@subliner.pos]] (fun { pos = v; _ } -> v);
-      test_exist "pos_all" [%expr t [@pos_all]] (fun { pos_all = v; _ } -> v);
-      test_exist "pos_all.s" [%expr t [@subliner.pos_all]]
-        (fun { pos_all = v; _ } -> v);
-      test_exist "pos_left" [%expr t [@pos_left]] (fun { pos_left = v; _ } -> v);
-      test_exist "pos_left.s" [%expr t [@subliner.pos_left]]
-        (fun { pos_left = v; _ } -> v);
-      test_exist "pos_right" [%expr t [@pos_right]] (fun { pos_right = v; _ } ->
-          v);
-      test_exist "pos_right.s" [%expr t [@subliner.pos_right]]
-        (fun { pos_right = v; _ } -> v);
-      test_exist "non_empty" [%expr t [@non_empty]] (fun { non_empty = v; _ } ->
-          v);
-      test_exist "non_empty.s" [%expr t [@subliner.non_empty]]
-        (fun { non_empty = v; _ } -> v);
-      test_exist "last" [%expr t [@last]] (fun { last = v; _ } -> v);
-      test_exist "last.s" [%expr t [@subliner.last]] (fun { last = v; _ } -> v);
-      test_exist "default" [%expr t [@default]] (fun { default = v; _ } -> v);
-      test_exist "default.s" [%expr t [@subliner.default]]
-        (fun { default = v; _ } -> v);
+      test "empty"
+        (fun t -> M.map (fun _ -> assert false) t |> ignore)
+        [%expr t];
+      test_exist "deprecated"
+        (fun { deprecated = v; _ } -> v)
+        [%expr t [@deprecated]];
+      test_exist "deprecated.s"
+        (fun { deprecated = v; _ } -> v)
+        [%expr t [@subliner.deprecated]];
+      test_exist "deprecated_"
+        (fun { deprecated = v; _ } -> v)
+        [%expr t [@deprecated_]];
+      test_exist "deprecated_.s"
+        (fun { deprecated = v; _ } -> v)
+        [%expr t [@subliner.deprecated_]];
+      test_exist "absent" (fun { absent = v; _ } -> v) [%expr t [@absent]];
+      test_exist "absent.s"
+        (fun { absent = v; _ } -> v)
+        [%expr t [@subliner.absent]];
+      test_exist "doc" (fun { doc = v; _ } -> v) [%expr t [@doc]];
+      test_exist "doc.s" (fun { doc = v; _ } -> v) [%expr t [@subliner.doc]];
+      test_exist "ocaml.doc" (fun { doc = v; _ } -> v) [%expr t [@ocaml.doc]];
+      test_exist "docs" (fun { docs = v; _ } -> v) [%expr t [@docs]];
+      test_exist "docs.s" (fun { docs = v; _ } -> v) [%expr t [@subliner.docs]];
+      test_exist "docv" (fun { docv = v; _ } -> v) [%expr t [@docv]];
+      test_exist "docv.s" (fun { docv = v; _ } -> v) [%expr t [@subliner.docv]];
+      test_exist "env" (fun { env = v; _ } -> v) [%expr t [@env]];
+      test_exist "env.s" (fun { env = v; _ } -> v) [%expr t [@subliner.env]];
+      test_exist "names" (fun { names = v; _ } -> v) [%expr t [@names]];
+      test_exist "names.s"
+        (fun { names = v; _ } -> v)
+        [%expr t [@subliner.names]];
+      test_exist "pos" (fun { pos = v; _ } -> v) [%expr t [@pos]];
+      test_exist "pos.s" (fun { pos = v; _ } -> v) [%expr t [@subliner.pos]];
+      test_exist "pos_all" (fun { pos_all = v; _ } -> v) [%expr t [@pos_all]];
+      test_exist "pos_all.s"
+        (fun { pos_all = v; _ } -> v)
+        [%expr t [@subliner.pos_all]];
+      test_exist "pos_left" (fun { pos_left = v; _ } -> v) [%expr t [@pos_left]];
+      test_exist "pos_left.s"
+        (fun { pos_left = v; _ } -> v)
+        [%expr t [@subliner.pos_left]];
+      test_exist "pos_right"
+        (fun { pos_right = v; _ } -> v)
+        [%expr t [@pos_right]];
+      test_exist "pos_right.s"
+        (fun { pos_right = v; _ } -> v)
+        [%expr t [@subliner.pos_right]];
+      test_exist "non_empty"
+        (fun { non_empty = v; _ } -> v)
+        [%expr t [@non_empty]];
+      test_exist "non_empty.s"
+        (fun { non_empty = v; _ } -> v)
+        [%expr t [@subliner.non_empty]];
+      test_exist "last" (fun { last = v; _ } -> v) [%expr t [@last]];
+      test_exist "last.s" (fun { last = v; _ } -> v) [%expr t [@subliner.last]];
+      test_exist "default" (fun { default = v; _ } -> v) [%expr t [@default]];
+      test_exist "default.s"
+        (fun { default = v; _ } -> v)
+        [%expr t [@subliner.default]];
     ]
 end
 
@@ -80,25 +93,35 @@ module Common = struct
 
   let test_set =
     [
-      test "ignore" [%expr t [@irrelevant]] (fun t ->
-          Term.M.map (fun _ -> assert false) t |> ignore);
+      test "ignore"
+        (fun t -> Term.M.map (fun _ -> assert false) t |> ignore)
+        [%expr t [@irrelevant]];
       (* level priority *)
-      test "priority_0" [%expr t [@ocaml.doc] [@doc ""]] (fun { doc; _ } ->
-          doc |> Option.get |> fun l -> assert (List.length l = 1));
-      test "priority_1" [%expr t [@doc] [@subliner.doc ""]] (fun { doc; _ } ->
-          doc |> Option.get |> fun l -> assert (List.length l = 1));
-      test "priority_2" [%expr t [@ocaml.doc] [@subliner.doc ""]]
+      test "priority_0"
         (fun { doc; _ } ->
-          doc |> Option.get |> fun l -> assert (List.length l = 1));
-      test "priority_3" [%expr t [@doc] [@doc ""]] (fun { doc; _ } ->
-          doc |> Option.get |> fun l -> assert (List.length l = 1));
-      test "priority_4" [%expr t [@subliner.doc ""] [@doc]] (fun { doc; _ } ->
-          doc |> Option.get |> fun l -> assert (List.length l = 1));
+          doc |> Option.get |> fun l -> assert (List.length l = 1))
+        [%expr t [@ocaml.doc] [@doc ""]];
+      test "priority_1"
+        (fun { doc; _ } ->
+          doc |> Option.get |> fun l -> assert (List.length l = 1))
+        [%expr t [@doc] [@subliner.doc ""]];
+      test "priority_2"
+        (fun { doc; _ } ->
+          doc |> Option.get |> fun l -> assert (List.length l = 1))
+        [%expr t [@ocaml.doc] [@subliner.doc ""]];
+      test "priority_3"
+        (fun { doc; _ } ->
+          doc |> Option.get |> fun l -> assert (List.length l = 1))
+        [%expr t [@doc] [@doc ""]];
+      test "priority_4"
+        (fun { doc; _ } ->
+          doc |> Option.get |> fun l -> assert (List.length l = 1))
+        [%expr t [@subliner.doc ""] [@doc]];
       (* expected failure *)
-      test_raises "invalid_payload" [%expr t [@doc: int]]
-        "unsupported payload for attribute";
-      test_raises "invalid_attr" [%expr t [@subliner.irrelevant]]
-        "unexpected attribute name: irrelevant";
+      test_raises "invalid_payload" ~exn:"unsupported payload for attribute"
+        [%expr t [@doc: int]];
+      test_raises "invalid_attr" ~exn:"unexpected attribute name: irrelevant"
+        [%expr t [@subliner.irrelevant]];
     ]
 end
 
@@ -109,48 +132,54 @@ module Cmd_info = struct
     test_impl (fun expr ->
         M.(parse expr |> map (fun (_loc, structure) -> structure)))
 
-  let test_exist name expr func =
-    test ("attr." ^ name) expr (fun t -> assert (t |> func |> Option.is_some))
-
-  let test_raises name (expression : expression) expected =
-    Utils.test_raises name expected (fun () ->
-        M.parse expression.pexp_attributes)
+  let test_exist name func expr =
+    test ("attr." ^ name) (fun t -> assert (t |> func |> Option.is_some)) expr
 
   let test_set =
     [
-      test "empty" [%expr t] (fun t ->
-          M.map (fun _ -> assert false) t |> ignore);
-      test_exist "deprecated" [%expr t [@deprecated]]
-        (fun { deprecated = v; _ } -> v);
-      test_exist "deprecated.s" [%expr t [@subliner.deprecated]]
-        (fun { deprecated = v; _ } -> v);
-      test_exist "deprecated_" [%expr t [@deprecated_]]
-        (fun { deprecated = v; _ } -> v);
-      test_exist "deprecated_.s" [%expr t [@subliner.deprecated_]]
-        (fun { deprecated = v; _ } -> v);
-      test_exist "man_xrefs" [%expr t [@man_xrefs]] (fun { man_xrefs = v; _ } ->
-          v);
-      test_exist "man_xrefs.s" [%expr t [@subliner.man_xrefs]]
-        (fun { man_xrefs = v; _ } -> v);
-      test_exist "man" [%expr t [@man]] (fun { man = v; _ } -> v);
-      test_exist "man.s" [%expr t [@subliner.man]] (fun { man = v; _ } -> v);
-      test_exist "envs" [%expr t [@envs]] (fun { envs = v; _ } -> v);
-      test_exist "envs.s" [%expr t [@subliner.envs]] (fun { envs = v; _ } -> v);
-      test_exist "exits" [%expr t [@exits]] (fun { exits = v; _ } -> v);
-      test_exist "exits.s" [%expr t [@subliner.exits]] (fun { exits = v; _ } ->
-          v);
-      test_exist "sdocs" [%expr t [@sdocs]] (fun { sdocs = v; _ } -> v);
-      test_exist "sdocs.s" [%expr t [@subliner.sdocs]] (fun { sdocs = v; _ } ->
-          v);
-      test_exist "docs" [%expr t [@docs]] (fun { docs = v; _ } -> v);
-      test_exist "docs.s" [%expr t [@subliner.docs]] (fun { docs = v; _ } -> v);
-      test_exist "doc" [%expr t [@doc]] (fun { doc = v; _ } -> v);
-      test_exist "doc.s" [%expr t [@subliner.doc]] (fun { doc = v; _ } -> v);
-      test_exist "ocaml.doc" [%expr t [@ocaml.doc]] (fun { doc = v; _ } -> v);
-      test_exist "version" [%expr t [@version]] (fun { version = v; _ } -> v);
-      test_exist "version.s" [%expr t [@subliner.version]]
-        (fun { version = v; _ } -> v);
-      test_exist "name" [%expr t [@name]] (fun { name = v; _ } -> v);
-      test_exist "name.s" [%expr t [@subliner.name]] (fun { name = v; _ } -> v);
+      test "empty"
+        (fun t -> M.map (fun _ -> assert false) t |> ignore)
+        [%expr t];
+      test_exist "deprecated"
+        (fun { deprecated = v; _ } -> v)
+        [%expr t [@deprecated]];
+      test_exist "deprecated.s"
+        (fun { deprecated = v; _ } -> v)
+        [%expr t [@subliner.deprecated]];
+      test_exist "deprecated_"
+        (fun { deprecated = v; _ } -> v)
+        [%expr t [@deprecated_]];
+      test_exist "deprecated_.s"
+        (fun { deprecated = v; _ } -> v)
+        [%expr t [@subliner.deprecated_]];
+      test_exist "man_xrefs"
+        (fun { man_xrefs = v; _ } -> v)
+        [%expr t [@man_xrefs]];
+      test_exist "man_xrefs.s"
+        (fun { man_xrefs = v; _ } -> v)
+        [%expr t [@subliner.man_xrefs]];
+      test_exist "man" (fun { man = v; _ } -> v) [%expr t [@man]];
+      test_exist "man.s" (fun { man = v; _ } -> v) [%expr t [@subliner.man]];
+      test_exist "envs" (fun { envs = v; _ } -> v) [%expr t [@envs]];
+      test_exist "envs.s" (fun { envs = v; _ } -> v) [%expr t [@subliner.envs]];
+      test_exist "exits" (fun { exits = v; _ } -> v) [%expr t [@exits]];
+      test_exist "exits.s"
+        (fun { exits = v; _ } -> v)
+        [%expr t [@subliner.exits]];
+      test_exist "sdocs" (fun { sdocs = v; _ } -> v) [%expr t [@sdocs]];
+      test_exist "sdocs.s"
+        (fun { sdocs = v; _ } -> v)
+        [%expr t [@subliner.sdocs]];
+      test_exist "docs" (fun { docs = v; _ } -> v) [%expr t [@docs]];
+      test_exist "docs.s" (fun { docs = v; _ } -> v) [%expr t [@subliner.docs]];
+      test_exist "doc" (fun { doc = v; _ } -> v) [%expr t [@doc]];
+      test_exist "doc.s" (fun { doc = v; _ } -> v) [%expr t [@subliner.doc]];
+      test_exist "ocaml.doc" (fun { doc = v; _ } -> v) [%expr t [@ocaml.doc]];
+      test_exist "version" (fun { version = v; _ } -> v) [%expr t [@version]];
+      test_exist "version.s"
+        (fun { version = v; _ } -> v)
+        [%expr t [@subliner.version]];
+      test_exist "name" (fun { name = v; _ } -> v) [%expr t [@name]];
+      test_exist "name.s" (fun { name = v; _ } -> v) [%expr t [@subliner.name]];
     ]
 end

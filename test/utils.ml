@@ -2,14 +2,14 @@ open Ppxlib
 
 let diff_msg = "actual is different from expected"
 
-let test_raises name expected f =
+let test_raises name ~exn f =
   let impl () =
     try
       let () = f () |> ignore in
       Alcotest.fail "test expected to fail with exception"
     with Location.Error error ->
       let actual = Location.Error.message error in
-      Alcotest.(check string) name expected actual
+      Alcotest.(check string) name exn actual
   in
   Alcotest.test_case name `Quick impl
 

@@ -9,8 +9,8 @@ let test name (expected : t) (ct : core_type) =
   let f () = of_core_type ct |> Alcotest.check t Utils.diff_msg expected in
   Alcotest.test_case name `Quick f
 
-let test_raises name ~exn:expected (ct : core_type) =
-  Utils.test_raises name expected (fun () -> of_core_type ct)
+let test_raises name ~exn (ct : core_type) =
+  Utils.test_raises name ~exn (fun () -> of_core_type ct)
 
 let test_gen name (func : expression -> bool) (t : t) =
   let f () = assert (to_expr ~loc Attr.empty t |> func) in
