@@ -23,7 +23,8 @@ let test name expected argv =
       Cmdliner.Cmd.group info (simple_cmdliner_group_cmds Fun.id)
     in
     match Cmdliner.Cmd.eval_value ~argv cmd with
-    | Ok actual -> Alcotest.(check t) msg expected actual
+    | Ok (`Ok actual) -> Alcotest.(check t) msg expected actual
+    | Ok _ -> Alcotest.fail "unexpected eva_ok result"
     | Error _error -> Alcotest.fail "unexpected eval result"
   in
   Alcotest.test_case name `Quick f
@@ -31,16 +32,14 @@ let test name expected argv =
 let test_set =
   [
     test "simple_a"
-      (`Ok (Simple_a { a = "test-str-a" }))
+      (Simple_a { a = "test-str-a" })
       [| "cmd"; "simple_a"; "test-str-a" |];
-    test "simple_b"
-      (`Ok (Simple_t { ts = "test-str-t" }))
+    test "simple_t"
+      (Simple_t { ts = "test-str-t" })
       [| "cmd"; "simple_t"; "--ts"; "test-str-t" |];
-    test "simple_m"
-      (`Ok (Simple_m { m = 42 }))
-      [| "cmd"; "simple_m"; "-m"; "42" |];
+    test "simple_m" (Simple_m { m = 42 }) [| "cmd"; "simple_m"; "-m"; "42" |];
     test "simple_name_attr"
-      (`Ok (Simple_name_attr { a = "test-str-c" }))
+      (Simple_name_attr { a = "test-str-c" })
       [| "cmd"; "override-name"; "test-str-c" |];
-    test "simple_no_arg" (`Ok Simple_no_arg) [| "cmd"; "simple_no_arg" |];
+    test "simple_no_arg" Simple_no_arg [| "cmd"; "simple_no_arg" |];
   ]
