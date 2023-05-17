@@ -9,65 +9,6 @@ let loc = Location.none
 let msg = "actual is different from expected"
 let unit_expr = [%expr ()]
 
-module Conv = struct
-  module M = Ppx_subliner.Term.Conv
-
-  let t = Alcotest.testable (fun _ _ -> ()) ( = )
-
-  let test name (ct : core_type) (expected : M.t) =
-    let f () = M.of_core_type ct |> Alcotest.check t msg expected in
-    Alcotest.test_case name `Quick f
-
-  let test_raises name (ct : core_type) expected =
-    Utils.test_raises name expected (fun () -> M.of_core_type ct)
-
-  let test_gen name (t : M.t) (func : expression -> bool) =
-    let f () = assert (M.to_expr ~loc Attr.empty t |> func) in
-    Alcotest.test_case ("gen." ^ name) `Quick f
-
-  let test_set =
-    let open M in
-    [
-      test "bool" [%type: bool] Bool;
-      test "Bool.t" [%type: Bool.t] Bool;
-      test "char" [%type: char] Char;
-      test "Char.t`" [%type: Char.t] Char;
-      test "int" [%type: int] Int;
-      test "Int.t" [%type: Int.t] Int;
-      test "nativeint" [%type: nativeint] Nativeint;
-      test "Nativeint.t" [%type: Nativeint.t] Nativeint;
-      test "int32" [%type: int32] Int32;
-      test "Int32.t" [%type: Int32.t] Int32;
-      test "int64" [%type: int64] Int64;
-      test "Int64.t" [%type: Int64.t] Int64;
-      test "float" [%type: float] Float;
-      test "Float.t" [%type: Float.t] Float;
-      test "string" [%type: string] String;
-      test "String.t" [%type: String.t] String;
-      test "option" [%type: int option] (Option Int);
-      test "Option.t" [%type: int Option.t] (Option Int);
-      test "list" [%type: int list] (List Int);
-      test "List.t" [%type: int List.t] (List Int);
-      test "array" [%type: int array] (Array Int);
-      test "Array.t" [%type: int Array.t] (Array Int);
-      test "nested" [%type: int list list] (List (List Int));
-      test_raises "invalid_1" [%type: int seq] "unsupported field type";
-      test_raises "invalid_2" [%type: unit] "unsupported field type";
-      test_gen "basic" Bool (function
-        | [%expr Cmdliner.Arg.(bool)] -> true
-        | _ -> false);
-      test_gen "option" (Option Char) (function
-        | [%expr Cmdliner.Arg.(some char)] -> true
-        | _ -> false);
-      test_gen "list" (List Int) (function
-        | [%expr Cmdliner.Arg.(list ?sep:None int)] -> true
-        | _ -> false);
-      test_gen "array" (Array Int) (function
-        | [%expr Cmdliner.Arg.(array ?sep:None int)] -> true
-        | _ -> false);
-    ]
-end
-
 module Info = struct
   module M = Ppx_subliner.Term.Info
 

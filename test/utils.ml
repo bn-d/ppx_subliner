@@ -1,5 +1,7 @@
 open Ppxlib
 
+let diff_msg = "actual is different from expected"
+
 let test_raises name expected f =
   let impl () =
     try
