@@ -109,8 +109,52 @@ module Conv_new = struct
     | Array of t
   (* TODO: support Pair | T3 | T4 *)
 
-  let of_core_type (_ct : core_type) : t = failwith ""
-  let to_expr ~loc:_ _t : expression = failwith ""
+  let rec of_core_type : core_type -> t = function
+    | [%type: bool] | [%type: Bool.t] -> Bool
+    | [%type: char] | [%type: Char.t] -> Char
+    | [%type: int] | [%type: Int.t] -> Int
+    | [%type: nativeint] | [%type: Nativeint.t] -> Nativeint
+    | [%type: int32] | [%type: Int32.t] -> Int32
+    | [%type: int64] | [%type: Int64.t] -> Int64
+    | [%type: float] | [%type: Float.t] -> Float
+    | [%type: string] | [%type: String.t] -> String
+    | [%type: [%t? ct] option] | [%type: [%t? ct] Option.t] ->
+        Option (of_core_type ct)
+    | [%type: [%t? ct] list] | [%type: [%t? ct] List.t] ->
+        List (of_core_type ct)
+    | [%type: [%t? ct] array] | [%type: [%t? ct] Array.t] ->
+        Array (of_core_type ct)
+    | { ptyp_loc = loc; _ } -> Error.field_type ~loc
+
+  let to_expr ~loc (_attrs : attrs) t : expression =
+    (* TODO: impl sep *)
+    let list_sep_expr = None |> Option.value ~default:[%expr None]
+    and array_sep_expr = None |> Option.value ~default:[%expr None] in
+    let rec impl ~loc = function
+      | Bool -> [%expr bool]
+      | Char -> [%expr char]
+      | Int -> [%expr int]
+      | Nativeint -> [%expr nativeint]
+      | Int32 -> [%expr int32]
+      | Int64 -> [%expr int64]
+      | Float -> [%expr float]
+      | String -> [%expr string]
+      | File -> [%expr file]
+      | Dir -> [%expr dir]
+      | Non_dir_file -> [%expr non_dir_file]
+      | Option t ->
+          let expr = impl ~loc t in
+          [%expr some [%e expr]]
+      | List t ->
+          let expr = impl ~loc t in
+          [%expr list ?sep:[%e list_sep_expr] [%e expr]]
+      | Array t ->
+          let expr = impl ~loc t in
+          [%expr array ?sep:[%e array_sep_expr] [%e expr]]
+    in
+
+    let expr = impl ~loc t in
+    [%expr Cmdliner.Arg.([%e expr])]
 end
 
 type conv = Conv.t
@@ -319,7 +363,7 @@ module Positional = struct
 
     let as_term_expr = As_term.to_expr ~loc as_term
     and info_expr = Info.expr_of_attrs ~loc [%expr []] attrs
-    and conv_expr = Conv_new.to_expr ~loc conv
+    and conv_expr = Conv_new.to_expr ~loc attrs conv
     and pos_fun_expr =
       match (type_, rev) with
       | `pos_all, true ->
