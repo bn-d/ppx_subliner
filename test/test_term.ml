@@ -7,7 +7,6 @@ type attrs = Ppx_subliner.Term.attrs
 
 let loc = Location.none
 let msg = "actual is different from expected"
-let unit_expr = [%expr ()]
 
 module Info = struct
   module M = Ppx_subliner.Term.Info
@@ -33,45 +32,6 @@ module Info = struct
     ]
 end
 
-module As_term = struct
-  module M = Ppx_subliner.Term.As_term
-
-  let t = Alcotest.testable (fun _ _ -> ()) ( = )
-
-  let test name (attrs : attrs) expected =
-    let f () = M.of_attrs ~loc attrs |> Alcotest.check t msg expected in
-    Alcotest.test_case name `Quick f
-
-  let test_raises name (attrs : attrs) expected =
-    Utils.test_raises name expected (fun () -> M.of_attrs ~loc attrs)
-
-  let test_set =
-    let s = (loc, [%str]) and u = (loc, [%str [%e unit_expr]]) in
-    [
-      test "empty" Attr.empty (`value None);
-      test "default" (Attr.make_t ~default:u ()) (`value (Some unit_expr));
-      test_raises "default.invalid"
-        (Attr.make_t ~default:s ())
-        "unsupported payload for attribute";
-      test "non_empty" (Attr.make_t ~non_empty:s ()) `non_empty;
-      test_raises "non_empty.invalid"
-        (Attr.make_t ~non_empty:u ())
-        "flag cannot have any payload";
-      test "last" (Attr.make_t ~last:s ()) (`last None);
-      test "last.default"
-        (Attr.make_t ~last:s ~default:u ())
-        (`last (Some unit_expr));
-      test_raises "last.invalid" (Attr.make_t ~last:u ())
-        "flag cannot have any payload";
-      test_raises "non_empty_last_conflict"
-        (Attr.make_t ~non_empty:s ~last:s ())
-        "`non_empty` and `last` cannot be used at the same time";
-      test_raises "non_empty_default_conflict"
-        (Attr.make_t ~non_empty:s ~default:u ())
-        "`non_empty` and `default` cannot be used at the same time";
-    ]
-end
-
 let test check term prefix name expected argv =
   let f () =
     let cmd =
@@ -92,7 +52,7 @@ let test_equal term t prefix name expected argv =
           Alcotest.failf "eval error: %s" @@ Utils.eval_error_to_string e)
     term prefix name expected argv
 
-let test_raise term prefix name expected argv =
+let test_error term prefix name expected argv =
   test
     (fun expected actual ->
       match actual with
@@ -128,10 +88,10 @@ module Positional = struct
 
   let test_set =
     let test_simple = test_equal simple_cmdliner_term simple "simple"
-    and test_raise_simple = test_raise simple_cmdliner_term "simple"
+    and test_simple_error = test_error simple_cmdliner_term "simple"
     and test_left = test_equal left_cmdliner_term left "list_pos"
     and test_right = test_equal right_cmdliner_term right "list_pos"
-    and test_raise_right = test_raise right_cmdliner_term "list_pos"
+    and test_right_error = test_error right_cmdliner_term "list_pos"
     and test_all = test_equal all_cmdliner_term all "list_pos" in
     [
       test_simple "simple"
@@ -154,16 +114,16 @@ module Positional = struct
           last_default = true;
         }
         [| "cmd"; "b"; "dd"; "4" |];
-      test_raise_simple "required" `Term [| "cmd" |];
-      test_raise_simple "non_empty" `Parse [| "cmd"; "a"; "a"; "" |];
-      test_raise_simple "too_many" `Parse
+      test_simple_error "required" `Term [| "cmd" |];
+      test_simple_error "non_empty" `Parse [| "cmd"; "a"; "a"; "" |];
+      test_simple_error "too_many" `Parse
         [| "cmd"; "a"; "a"; "1"; "1.2"; "true,false"; "too_many" |];
       test_left "left_1" { last = 2 } [| "cmd"; "1"; "2" |];
       test_left "left_2" { last = 1 } [| "cmd"; "1" |];
       test_right "right"
         { non_empty = [ 2; 3; 4 ] }
         [| "cmd"; "1"; "2"; "3"; "4" |];
-      test_raise_right "non_empty" `Term [| "cmd" |];
+      test_right_error "non_empty" `Term [| "cmd" |];
       test_all "nested"
         { nested = [ [ 1 ]; [ 2 ]; [ 3 ] ] }
         [| "cmd"; "1"; "2"; "3" |];
