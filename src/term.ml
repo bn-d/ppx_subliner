@@ -354,8 +354,12 @@ module Positional = struct
               (`value (), default_expr, in_conv)
           | `non_empty, List in_conv -> (`non_empty, [%expr []], in_conv)
           | `last default, _ ->
-              let default_expr = Option.value ~default:[%expr []] default in
-              (`last (), [%expr [ [%e default_expr] ]], conv)
+              let default_expr =
+                Option.fold ~none:[%expr []]
+                  ~some:(fun expr -> [%expr [ [%e expr] ]])
+                  default
+              in
+              (`last (), default_expr, conv)
           | _, _ ->
               Location.raise_errorf ~loc
                 "`pos_left`, `pos_right` and `pos_all` type must be a list")
