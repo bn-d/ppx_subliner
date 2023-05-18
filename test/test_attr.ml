@@ -57,6 +57,10 @@ module Term = struct
       test_exist "names.s"
         (fun { names = v; _ } -> v)
         [%expr t [@subliner.names]];
+      test_exist "opt_all" (fun { opt_all = v; _ } -> v) [%expr t [@opt_all]];
+      test_exist "opt_all.s"
+        (fun { opt_all = v; _ } -> v)
+        [%expr t [@subliner.opt_all]];
       test_exist "pos" (fun { pos = v; _ } -> v) [%expr t [@pos]];
       test_exist "pos.s" (fun { pos = v; _ } -> v) [%expr t [@subliner.pos]];
       test_exist "pos_all" (fun { pos_all = v; _ } -> v) [%expr t [@pos_all]];

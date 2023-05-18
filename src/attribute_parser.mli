@@ -15,6 +15,7 @@ module Term : sig
     env : 'a option;
     (* named *)
     names : 'a option;
+    opt_all : 'a option;
     (* positional *)
     pos : 'a option;
     pos_all : 'a option;

@@ -99,6 +99,7 @@ module Term = struct
     env : 'a option;
     (* named *)
     names : 'a option;
+    opt_all : 'a option;
     (* positional *)
     pos : 'a option;
     pos_all : 'a option;
@@ -125,6 +126,7 @@ module Term = struct
         doc;
         env;
         names;
+        opt_all;
         pos;
         pos_all;
         pos_left;
@@ -143,6 +145,7 @@ module Term = struct
       env = f env;
       (* named *)
       names = f names;
+      opt_all = f opt_all;
       (* positional *)
       pos = f pos;
       pos_all = f pos_all;
@@ -162,6 +165,7 @@ module Term = struct
     | "doc" -> Some `doc
     | "env" -> Some `env
     | "names" -> Some `names
+    | "opt_all" -> Some `opt_all
     | "pos" -> Some `pos
     | "pos_all" -> Some `pos_all
     | "pos_left" -> Some `pos_left
@@ -180,6 +184,7 @@ module Term = struct
     | `doc -> { t with doc = Level.join t.doc v }
     | `env -> { t with env = Level.join t.env v }
     | `names -> { t with names = Level.join t.names v }
+    | `opt_all -> { t with opt_all = Level.join t.opt_all v }
     | `pos -> { t with pos = Level.join t.pos v }
     | `pos_all -> { t with pos_all = Level.join t.pos_all v }
     | `pos_left -> { t with pos_left = Level.join t.pos_left v }
