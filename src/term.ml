@@ -179,16 +179,32 @@ module Positional = struct
     | `pos_right (r, p) ->
         pos_fun_expr_impl ~loc r p [%expr Cmdliner.Arg.pos_right]
 
-  let expr_of_attrs ~loc ct type_ (attrs : attrs) : expression =
+  let expr_of_attrs ~loc ct (attrs : attrs) : expression =
+    let () =
+      attrs.names
+      |> Attribute_parser.to_expr_opt
+      |> Option.fold ~none:() ~some:(fun _ ->
+             Error.f ~loc "`names` cannot be used with positional argument")
+    in
+    (* TODO: opt_all error *)
     let type_ =
       let rev = false (* TODO: support rev *) in
-      match type_ with
-      | `pos_all when rev ->
-          Location.raise_errorf ~loc "`rev` can only be used with `pos_all`"
-      | `pos pos_expr -> `pos (rev, pos_expr)
-      | `pos_left pos_expr -> `pos_left (rev, pos_expr)
-      | `pos_right pos_expr -> `pos_right (rev, pos_expr)
-      | `pos_all -> `pos_all
+      match attrs with
+      | { pos = Some pos; _ } ->
+          let pos_expr = Attribute_parser.to_expr pos in
+          `pos (rev, pos_expr)
+      | { pos_left = Some pos; _ } ->
+          let pos_expr = Attribute_parser.to_expr pos in
+          `pos_left (rev, pos_expr)
+      | { pos_right = Some pos; _ } ->
+          let pos_expr = Attribute_parser.to_expr pos in
+          `pos_right (rev, pos_expr)
+      | { pos_all = Some _; _ } when rev ->
+          Location.raise_errorf ~loc "`rev` cannot be used with `pos_all`"
+      | { pos_all = Some pos; _ } ->
+          let _ = Attribute_parser.to_bool (Some pos) in
+          `pos_all
+      | _ -> Error.unexpected ~loc
     in
 
     let as_term, default_expr, conv =
@@ -246,27 +262,13 @@ module T = struct
       + count attrs.pos_left
       + count attrs.pos_right
     in
-    match (attrs, pos_count) with
+    match pos_count with
     (* named *)
-    | _, 0 -> Named.expr_of_attrs ~loc name ct attrs
+    | 0 -> Named.expr_of_attrs ~loc name ct attrs
     (* positional *)
-    | { names = Some _; _ }, 1 ->
-        Location.raise_errorf ~loc "cannot apply `names` to positional argument"
-    (* TODO: opt_all error *)
-    | { pos = Some pos; _ }, 1 ->
-        let pos_expr = Attribute_parser.to_expr pos in
-        Positional.expr_of_attrs ~loc ct (`pos pos_expr) attrs
-    | { pos_left = Some pos; _ }, 1 ->
-        let pos_expr = Attribute_parser.to_expr pos in
-        Positional.expr_of_attrs ~loc ct (`pos_left pos_expr) attrs
-    | { pos_right = Some pos; _ }, 1 ->
-        let pos_expr = Attribute_parser.to_expr pos in
-        Positional.expr_of_attrs ~loc ct (`pos_right pos_expr) attrs
-    | { pos_all = Some pos; _ }, 1 ->
-        let _ = Attribute_parser.to_bool (Some pos) in
-        Positional.expr_of_attrs ~loc ct `pos_all attrs
+    | 1 -> Positional.expr_of_attrs ~loc ct attrs
     (* multiple pos error *)
-    | _, _ ->
+    | _ ->
         Location.raise_errorf ~loc
           "only one of [pos|pos_all|pos_left|pos_right] can be specified at \
            the same time"
