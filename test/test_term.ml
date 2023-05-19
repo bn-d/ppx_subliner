@@ -6,130 +6,22 @@ module Attr = Ppx_subliner.Attribute_parser.Term
 type attrs = Ppx_subliner.Term.attrs
 
 let loc = Location.none
-let msg = "actual is different from expected"
-let unit_expr = [%expr ()]
-
-module Conv = struct
-  module M = Ppx_subliner.Term.Conv
-
-  let t = Alcotest.testable (fun _ _ -> ()) ( = )
-
-  let test name (ct : core_type) (expected : M.complex) =
-    let f () = M.of_core_type ct |> snd |> Alcotest.check t msg expected in
-    Alcotest.test_case name `Quick f
-
-  let test_raises name (ct : core_type) expected =
-    Utils.test_raises name expected (fun () -> M.of_core_type ct)
-
-  let test_gen name (t : M.complex) (func : expression -> bool) =
-    let f () = assert (M.to_expr (loc, t) |> func) in
-    Alcotest.test_case ("gen." ^ name) `Quick f
-
-  let test_set =
-    let open M in
-    [
-      test "bool" [%type: bool] (Basic Bool);
-      test "Bool.t" [%type: Bool.t] (Basic Bool);
-      test "char" [%type: char] (Basic Char);
-      test "Char.t`" [%type: Char.t] (Basic Char);
-      test "int" [%type: int] (Basic Int);
-      test "Int.t" [%type: Int.t] (Basic Int);
-      test "nativeint" [%type: nativeint] (Basic Nativeint);
-      test "Nativeint.t" [%type: Nativeint.t] (Basic Nativeint);
-      test "int32" [%type: int32] (Basic Int32);
-      test "Int32.t" [%type: Int32.t] (Basic Int32);
-      test "int64" [%type: int64] (Basic Int64);
-      test "Int64.t" [%type: Int64.t] (Basic Int64);
-      test "float" [%type: float] (Basic Float);
-      test "Float.t" [%type: Float.t] (Basic Float);
-      test "string" [%type: string] (Basic String);
-      test "String.t" [%type: String.t] (Basic String);
-      test "option" [%type: int option] (Option Int);
-      test "Option.t" [%type: int Option.t] (Option Int);
-      test "list" [%type: int list] (List { sep_expr = None; basic = Int });
-      test "List.t" [%type: int List.t] (List { sep_expr = None; basic = Int });
-      test "array" [%type: int array] (Array { sep_expr = None; basic = Int });
-      test "Array.t" [%type: int Array.t]
-        (Array { sep_expr = None; basic = Int });
-      test_raises "invalid_1" [%type: int seq] "unsupported field type";
-      test_raises "invalid_2" [%type: unit] "unsupported field type";
-      test_gen "basic" (Basic Bool) (function
-        | [%expr Cmdliner.Arg.(bool)] -> true
-        | _ -> false);
-      test_gen "option" (Option Char) (function
-        | [%expr Cmdliner.Arg.(some char)] -> true
-        | _ -> false);
-      test_gen "list"
-        (List { sep_expr = None; basic = Int })
-        (function
-          | [%expr Cmdliner.Arg.(list ~sep:',' int)] -> true | _ -> false);
-      test_gen "array"
-        (Array { sep_expr = Some [%expr ';']; basic = Float })
-        (function
-          | [%expr Cmdliner.Arg.(array ~sep:';' float)] -> true | _ -> false);
-    ]
-end
 
 module Info = struct
   module M = Ppx_subliner.Term.Info
 
-  let test_gen name (attrs : attrs) (func : expression -> bool) =
-    let f () = assert (M.expr_of_attrs ~loc [%expr [ "NAME" ]] attrs |> func) in
-    Alcotest.test_case ("gen." ^ name) `Quick f
+  let t = Alcotest.of_pp (fun _ _ -> ())
+  let test_gen = Utils.test_equal t (M.expr_of_attrs ~loc [%expr [ "NAME" ]])
 
   let test_set =
     let u = (loc, [%str ()]) in
     [
-      test_gen "empty" Attr.empty (function
-        | [%expr Cmdliner.Arg.info [ "NAME" ]] -> true
-        | _ -> false);
+      test_gen "empty" [%expr Cmdliner.Arg.info [ "NAME" ]] Attr.empty;
       test_gen "all"
-        (Attr.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u ())
-        (function
-        | [%expr
-            Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:()
-              ~doc:() ~env:() [ "NAME" ]] ->
-            true
-        | _ -> false);
-    ]
-end
-
-module As_term = struct
-  module M = Ppx_subliner.Term.As_term
-
-  let t = Alcotest.testable (fun _ _ -> ()) ( = )
-
-  let test name (attrs : attrs) expected =
-    let f () = M.of_attrs ~loc attrs |> Alcotest.check t msg expected in
-    Alcotest.test_case name `Quick f
-
-  let test_raises name (attrs : attrs) expected =
-    Utils.test_raises name expected (fun () -> M.of_attrs ~loc attrs)
-
-  let test_set =
-    let s = (loc, [%str]) and u = (loc, [%str [%e unit_expr]]) in
-    [
-      test "empty" Attr.empty (`value None);
-      test "default" (Attr.make_t ~default:u ()) (`value (Some unit_expr));
-      test_raises "default.invalid"
-        (Attr.make_t ~default:s ())
-        "unsupported payload for attribute";
-      test "non_empty" (Attr.make_t ~non_empty:s ()) `non_empty;
-      test_raises "non_empty.invalid"
-        (Attr.make_t ~non_empty:u ())
-        "flag cannot have any payload";
-      test "last" (Attr.make_t ~last:s ()) (`last None);
-      test "last.default"
-        (Attr.make_t ~last:s ~default:u ())
-        (`last (Some unit_expr));
-      test_raises "last.invalid" (Attr.make_t ~last:u ())
-        "flag cannot have any payload";
-      test_raises "non_empty_last_conflict"
-        (Attr.make_t ~non_empty:s ~last:s ())
-        "`non_empty` and `last` cannot be used at the same time";
-      test_raises "non_empty_default_conflict"
-        (Attr.make_t ~non_empty:s ~default:u ())
-        "`non_empty` and `default` cannot be used at the same time";
+        [%expr
+          Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:() ~doc:()
+            ~env:() [ "NAME" ]]
+        (Attr.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u ());
     ]
 end
 
@@ -147,19 +39,127 @@ let test_equal term t prefix name expected argv =
   test
     (fun expected result ->
       match result with
-      | Ok (`Ok actual) -> Alcotest.check t msg expected actual
+      | Ok (`Ok actual) -> Alcotest.check t Utils.diff_msg expected actual
       | Ok _ -> Alcotest.fail "unexpected eva_ok result"
       | Error e ->
           Alcotest.failf "eval error: %s" @@ Utils.eval_error_to_string e)
     term prefix name expected argv
 
-let test_raise term prefix name expected argv =
+let test_error term prefix name expected argv =
   test
     (fun expected actual ->
       match actual with
-      | Error actual -> Alcotest.check Utils.eval_error msg expected actual
+      | Error actual ->
+          Alcotest.check Utils.eval_error Utils.diff_msg expected actual
       | Ok _ -> Alcotest.fail "test expected to fail")
     term prefix name expected argv
+
+module Named = struct
+  type simple = {
+    flag : bool;
+    default : int; [@default 42]
+    bool_default : bool; [@default true]
+    option : float array option;
+    required : int32;
+    non_empty : int64 list; [@non_empty]
+    last : char; [@last]
+    last_default : nativeint; [@last] [@default Nativeint.of_int 42]
+  }
+  [@@deriving subliner]
+
+  let simple = Alcotest.testable (fun _ _ -> ()) ( = )
+
+  type opt_all = {
+    required : bool list; [@opt_all]
+    default : int list; [@opt_all] [@default [ 1; 2 ]]
+    non_empty : int list; [@opt_all] [@non_empty]
+    last : int; [@opt_all] [@last]
+    last_default : int; [@opt_all] [@last] [@default 4]
+  }
+  [@@deriving subliner]
+
+  let opt_all = Alcotest.testable (fun _ _ -> ()) ( = )
+
+  let test_set =
+    let test_simple = test_equal simple_cmdliner_term simple "simple"
+    and test_simple_error = test_error simple_cmdliner_term "simple"
+    and test_opt_all = test_equal opt_all_cmdliner_term opt_all "opt_all"
+    and test_opt_all_error = test_error opt_all_cmdliner_term "opt_all" in
+    [
+      test_simple "simple"
+        {
+          flag = true;
+          default = 1;
+          bool_default = false;
+          option = Some [| 3.14; 3.15 |];
+          required = Int32.of_int 21;
+          non_empty = [ Int64.of_int 22; Int64.of_int 23 ];
+          last = 'c';
+          last_default = Nativeint.of_int 3;
+        }
+        [|
+          "cmd";
+          "--flag";
+          "--default=1";
+          "--bool_default=false";
+          "--option=3.14,3.15";
+          "--required=21";
+          "--non_empty=22,23";
+          "--last=a,b,c";
+          "--last_default=1,2,3";
+        |];
+      test_simple "default"
+        {
+          flag = false;
+          default = 42;
+          bool_default = true;
+          option = None;
+          required = Int32.of_int 21;
+          non_empty = [ Int64.of_int 22 ];
+          last = 'c';
+          last_default = Nativeint.of_int 42;
+        }
+        [| "cmd"; "--required=21"; "--non_empty=22"; "--last=a,b,c" |];
+      test_simple_error "required" `Parse
+        [| "cmd"; "--non_empty=22"; "--last=a,b,c" |];
+      test_simple_error "non_empty" `Parse
+        [| "cmd"; "--required=21"; "--last=a,b,c" |];
+      test_simple_error "last" `Parse
+        [| "cmd"; "--required=21"; "--non_empty=22" |];
+      test_opt_all "simple"
+        {
+          required = [ true; false ];
+          default = [ 1; 2 ];
+          non_empty = [ 3; 4 ];
+          last = 6;
+          last_default = 8;
+        }
+        [|
+          "cmd";
+          "--required=true";
+          "--required=false";
+          "--default=1";
+          "--default=2";
+          "--non_empty=3";
+          "--non_empty=4";
+          "--last=5";
+          "--last=6";
+          "--last_default=7";
+          "--last_default=8";
+        |];
+      test_opt_all "default"
+        {
+          required = [];
+          default = [ 1; 2 ];
+          non_empty = [ 1 ];
+          last = 1;
+          last_default = 4;
+        }
+        [| "cmd"; "--non_empty=1"; "--last=1" |];
+      test_opt_all_error "non_empty" `Parse [| "cmd"; "--last=1" |];
+      test_opt_all_error "last" `Parse [| "cmd"; "--non_empty=1" |];
+    ]
+end
 
 module Positional = struct
   type simple = {
@@ -189,10 +189,10 @@ module Positional = struct
 
   let test_set =
     let test_simple = test_equal simple_cmdliner_term simple "simple"
-    and test_raise_simple = test_raise simple_cmdliner_term "simple"
+    and test_simple_error = test_error simple_cmdliner_term "simple"
     and test_left = test_equal left_cmdliner_term left "list_pos"
     and test_right = test_equal right_cmdliner_term right "list_pos"
-    and test_raise_right = test_raise right_cmdliner_term "list_pos"
+    and test_right_error = test_error right_cmdliner_term "list_pos"
     and test_all = test_equal all_cmdliner_term all "list_pos" in
     [
       test_simple "simple"
@@ -215,16 +215,16 @@ module Positional = struct
           last_default = true;
         }
         [| "cmd"; "b"; "dd"; "4" |];
-      test_raise_simple "required" `Term [| "cmd" |];
-      test_raise_simple "non_empty" `Parse [| "cmd"; "a"; "a"; "" |];
-      test_raise_simple "too_many" `Parse
+      test_simple_error "required" `Term [| "cmd" |];
+      test_simple_error "non_empty" `Parse [| "cmd"; "a"; "a"; "" |];
+      test_simple_error "too_many" `Parse
         [| "cmd"; "a"; "a"; "1"; "1.2"; "true,false"; "too_many" |];
       test_left "left_1" { last = 2 } [| "cmd"; "1"; "2" |];
       test_left "left_2" { last = 1 } [| "cmd"; "1" |];
       test_right "right"
         { non_empty = [ 2; 3; 4 ] }
         [| "cmd"; "1"; "2"; "3"; "4" |];
-      test_raise_right "non_empty" `Term [| "cmd" |];
+      test_right_error "non_empty" `Term [| "cmd" |];
       test_all "nested"
         { nested = [ [ 1 ]; [ 2 ]; [ 3 ] ] }
         [| "cmd"; "1"; "2"; "3" |];
