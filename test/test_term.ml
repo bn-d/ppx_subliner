@@ -54,6 +54,113 @@ let test_error term prefix name expected argv =
       | Ok _ -> Alcotest.fail "test expected to fail")
     term prefix name expected argv
 
+module Named = struct
+  type simple = {
+    flag : bool;
+    default : int; [@default 42]
+    bool_default : bool; [@default true]
+    option : float array option;
+    required : int32;
+    non_empty : int64 list; [@non_empty]
+    last : char; [@last]
+    last_default : nativeint; [@last] [@default Nativeint.of_int 42]
+  }
+  [@@deriving subliner]
+
+  let simple = Alcotest.testable (fun _ _ -> ()) ( = )
+
+  type opt_all = {
+    required : bool list; [@opt_all]
+    default : int list; [@opt_all] [@default [ 1; 2 ]]
+    non_empty : int list; [@opt_all] [@non_empty]
+    last : int; [@opt_all] [@last]
+    last_default : int; [@opt_all] [@last] [@default 4]
+  }
+  [@@deriving subliner]
+
+  let opt_all = Alcotest.testable (fun _ _ -> ()) ( = )
+
+  let test_set =
+    let test_simple = test_equal simple_cmdliner_term simple "simple"
+    and test_simple_error = test_error simple_cmdliner_term "simple"
+    and test_opt_all = test_equal opt_all_cmdliner_term opt_all "opt_all"
+    and test_opt_all_error = test_error opt_all_cmdliner_term "opt_all" in
+    [
+      test_simple "simple"
+        {
+          flag = true;
+          default = 1;
+          bool_default = false;
+          option = Some [| 3.14; 3.15 |];
+          required = Int32.of_int 21;
+          non_empty = [ Int64.of_int 22; Int64.of_int 23 ];
+          last = 'c';
+          last_default = Nativeint.of_int 3;
+        }
+        [|
+          "cmd";
+          "--flag";
+          "--default=1";
+          "--bool_default=false";
+          "--option=3.14,3.15";
+          "--required=21";
+          "--non_empty=22,23";
+          "--last=a,b,c";
+          "--last_default=1,2,3";
+        |];
+      test_simple "default"
+        {
+          flag = false;
+          default = 42;
+          bool_default = true;
+          option = None;
+          required = Int32.of_int 21;
+          non_empty = [ Int64.of_int 22 ];
+          last = 'c';
+          last_default = Nativeint.of_int 42;
+        }
+        [| "cmd"; "--required=21"; "--non_empty=22"; "--last=a,b,c" |];
+      test_simple_error "required" `Parse
+        [| "cmd"; "--non_empty=22"; "--last=a,b,c" |];
+      test_simple_error "non_empty" `Parse
+        [| "cmd"; "--required=21"; "--last=a,b,c" |];
+      test_simple_error "last" `Parse
+        [| "cmd"; "--required=21"; "--non_empty=22" |];
+      test_opt_all "simple"
+        {
+          required = [ true; false ];
+          default = [ 1; 2 ];
+          non_empty = [ 3; 4 ];
+          last = 6;
+          last_default = 8;
+        }
+        [|
+          "cmd";
+          "--required=true";
+          "--required=false";
+          "--default=1";
+          "--default=2";
+          "--non_empty=3";
+          "--non_empty=4";
+          "--last=5";
+          "--last=6";
+          "--last_default=7";
+          "--last_default=8";
+        |];
+      test_opt_all "default"
+        {
+          required = [];
+          default = [ 1; 2 ];
+          non_empty = [ 1 ];
+          last = 1;
+          last_default = 4;
+        }
+        [| "cmd"; "--non_empty=1"; "--last=1" |];
+      test_opt_all_error "non_empty" `Parse [| "cmd"; "--last=1" |];
+      test_opt_all_error "last" `Parse [| "cmd"; "--non_empty=1" |];
+    ]
+end
+
 module Positional = struct
   type simple = {
     pos : char; [@pos 0]

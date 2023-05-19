@@ -147,6 +147,7 @@ module Named = struct
       and opt_all = Attribute_parser.to_bool attrs.opt_all in
       if not opt_all then
         match (as_term, conv) with
+        | `value None, Bool -> (`value (), `flag)
         | `value (Some default_expr), _ -> (`value (), `opt (conv, default_expr))
         | `value None, Option _ -> (`value (), `opt (conv, [%expr None]))
         | `value None, _ -> (`required, `opt (Option conv, [%expr None]))
@@ -167,7 +168,11 @@ module Named = struct
         | `non_empty, List in_conv ->
             (`non_empty, `opt_all (in_conv, [%expr []]))
         | `last default, _ ->
-            let default_expr = Option.value ~default:[%expr []] default in
+            let default_expr =
+              Option.fold ~none:[%expr []]
+                ~some:(fun expr -> [%expr [ [%e expr] ]])
+                default
+            in
             (`last (), `opt_all (conv, default_expr))
         | _ ->
             Location.raise_errorf ~loc "`opt_all` must be used with list type"

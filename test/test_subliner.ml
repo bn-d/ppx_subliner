@@ -7,6 +7,7 @@ let () =
       ("term.conv", Test_term_conv.test_set);
       ("term.info", Test_term.Info.test_set);
       ("term.as-term", Test_term_as_term.test_set);
+      ("term.named", Test_term.Named.test_set);
       ("term.postional", Test_term.Positional.test_set);
       ("group-cmd", Test_group_cmd.test_set);
     ]
