@@ -4,9 +4,12 @@ module Attr = Ppx_subliner.Attribute_parser.Term
 
 let loc = Location.none
 let t = Alcotest.of_pp (fun _ _ -> ())
+let expr = Alcotest.of_pp (fun _ _ -> ())
 let test = Utils.test_equal t of_core_type
 let test_raises = Utils.test_raises of_core_type
-let test_gen name = Utils.testf (to_expr ~loc Attr.empty) ("gen." ^ name)
+
+let test_gen name =
+  Utils.test_equal expr (to_expr ~loc Attr.empty) ("gen." ^ name)
 
 let test_set =
   [
@@ -38,18 +41,17 @@ let test_set =
     test "nested" (List (List Int)) [%type: int list list];
     test_raises "invalid_1" ~exn:"unsupported field type" [%type: int seq];
     test_raises "invalid_2" ~exn:"unsupported field type" [%type: unit];
-    test_gen "basic"
-      (function [%expr Cmdliner.Arg.(bool)] -> true | _ -> false)
-      Bool;
-    test_gen "option"
-      (function [%expr Cmdliner.Arg.(some char)] -> true | _ -> false)
-      (Option Char);
-    test_gen "list"
-      (function
-        | [%expr Cmdliner.Arg.(list ?sep:None int)] -> true | _ -> false)
-      (List Int);
-    test_gen "array"
-      (function
-        | [%expr Cmdliner.Arg.(array ?sep:None int)] -> true | _ -> false)
-      (Array Int);
+    test_gen "basic" [%expr Cmdliner.Arg.(bool)] Bool;
+    test_gen "option" [%expr Cmdliner.Arg.(some char)] (Option Char);
+    test_gen "list" [%expr Cmdliner.Arg.(list ?sep:None int)] (List Int);
+    test_gen "array" [%expr Cmdliner.Arg.(array ?sep:None int)] (Array Int);
+    test_gen "pair"
+      [%expr Cmdliner.Arg.(pair ?sep:None int float)]
+      (Pair (Int, Float));
+    test_gen "t3"
+      [%expr Cmdliner.Arg.(t3 ?sep:None int float char)]
+      (T3 (Int, Float, Char));
+    test_gen "t4"
+      [%expr Cmdliner.Arg.(t4 ?sep:None int float char bool)]
+      (T4 (Int, Float, Char, Bool));
   ]
