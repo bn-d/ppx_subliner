@@ -150,7 +150,7 @@ module Named = struct
         | `value None, Bool -> (`value (), `flag)
         | `value (Some default_expr), _ -> (`value (), `opt (conv, default_expr))
         | `value None, Option _ -> (`value (), `opt (conv, [%expr None]))
-        | `value None, _ -> (`required, `opt (Option conv, [%expr None]))
+        | `value None, _ -> (`required, `opt (Conv.Option conv, [%expr None]))
         | `non_empty, List _ -> (`non_empty, `opt (conv, [%expr []]))
         | `last default, _ ->
             let default_expr =
@@ -158,7 +158,7 @@ module Named = struct
                 ~some:(fun expr -> [%expr [ [%e expr] ]])
                 default
             in
-            (`last (), `opt (List conv, default_expr))
+            (`last (), `opt (Conv.List conv, default_expr))
         | `non_empty, _ -> Error.non_empty_list ~loc
       else
         match (as_term, conv) with
