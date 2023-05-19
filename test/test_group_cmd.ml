@@ -32,13 +32,13 @@ let test_set =
   [
     test "simple_a"
       (Simple_a { a = "test-str-a" })
-      [| "cmd"; "simple_a"; "test-str-a" |];
+      [| "cmd"; "simple-a"; "test-str-a" |];
     test "simple_t"
       (Simple_t { ts = "test-str-t" })
-      [| "cmd"; "simple_t"; "--ts"; "test-str-t" |];
-    test "simple_m" (Simple_m { m = 42 }) [| "cmd"; "simple_m"; "-m"; "42" |];
+      [| "cmd"; "simple-t"; "--ts"; "test-str-t" |];
+    test "simple_m" (Simple_m { m = 42 }) [| "cmd"; "simple-m"; "-m"; "42" |];
     test "simple_name_attr"
       (Simple_name_attr { a = "test-str-c" })
       [| "cmd"; "override-name"; "test-str-c" |];
-    test "simple_no_arg" Simple_no_arg [| "cmd"; "simple_no_arg" |];
+    test "simple_no_arg" Simple_no_arg [| "cmd"; "simple-no-arg" |];
   ]

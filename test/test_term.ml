@@ -64,6 +64,7 @@ module Named = struct
     non_empty : int64 list; [@non_empty]
     last : char; [@last]
     last_default : nativeint; [@last] [@default Nativeint.of_int 42]
+    names : int; [@names [ "new_name"; "n" ]]
   }
   [@@deriving subliner]
 
@@ -96,17 +97,19 @@ module Named = struct
           non_empty = [ Int64.of_int 22; Int64.of_int 23 ];
           last = 'c';
           last_default = Nativeint.of_int 3;
+          names = 1;
         }
         [|
           "cmd";
           "--flag";
           "--default=1";
-          "--bool_default=false";
+          "--bool-default=false";
           "--option=3.14,3.15";
           "--required=21";
-          "--non_empty=22,23";
+          "--non-empty=22,23";
           "--last=a,b,c";
-          "--last_default=1,2,3";
+          "--last-default=1,2,3";
+          "--new_name=1";
         |];
       test_simple "default"
         {
@@ -116,16 +119,17 @@ module Named = struct
           option = None;
           required = Int32.of_int 21;
           non_empty = [ Int64.of_int 22 ];
-          last = 'c';
+          last = 'a';
           last_default = Nativeint.of_int 42;
+          names = 1;
         }
-        [| "cmd"; "--required=21"; "--non_empty=22"; "--last=a,b,c" |];
+        [| "cmd"; "--required=21"; "--non-empty=22"; "--last=a"; "-n"; "1" |];
       test_simple_error "required" `Parse
-        [| "cmd"; "--non_empty=22"; "--last=a,b,c" |];
-      test_simple_error "non_empty" `Parse
-        [| "cmd"; "--required=21"; "--last=a,b,c" |];
+        [| "cmd"; "--non-empty=22"; "--last=a,b,c"; "-n=1" |];
+      test_simple_error "non-empty" `Parse
+        [| "cmd"; "--required=21"; "--last=a,b,c"; "-n=1" |];
       test_simple_error "last" `Parse
-        [| "cmd"; "--required=21"; "--non_empty=22" |];
+        [| "cmd"; "--required=21"; "--non-empty=22"; "-n=1" |];
       test_opt_all "simple"
         {
           required = [ true; false ];
@@ -140,12 +144,12 @@ module Named = struct
           "--required=false";
           "--default=1";
           "--default=2";
-          "--non_empty=3";
-          "--non_empty=4";
+          "--non-empty=3";
+          "--non-empty=4";
           "--last=5";
           "--last=6";
-          "--last_default=7";
-          "--last_default=8";
+          "--last-default=7";
+          "--last-default=8";
         |];
       test_opt_all "default"
         {
@@ -155,9 +159,9 @@ module Named = struct
           last = 1;
           last_default = 4;
         }
-        [| "cmd"; "--non_empty=1"; "--last=1" |];
-      test_opt_all_error "non_empty" `Parse [| "cmd"; "--last=1" |];
-      test_opt_all_error "last" `Parse [| "cmd"; "--non_empty=1" |];
+        [| "cmd"; "--non-empty=1"; "--last=1" |];
+      test_opt_all_error "non-empty" `Parse [| "cmd"; "--last=1" |];
+      test_opt_all_error "last" `Parse [| "cmd"; "--non-empty=1" |];
     ]
 end
 

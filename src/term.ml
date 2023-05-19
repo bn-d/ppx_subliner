@@ -179,7 +179,9 @@ module Named = struct
       (* field name will be the default arg name *)
       let default_names_expr =
         let default_name_expr =
-          Ast_builder.Default.estring ~loc:name.loc name.txt
+          name.txt
+          |> String.map (function '_' -> '-' | c -> c)
+          |> Ast_builder.Default.estring ~loc:name.loc
         in
         [%expr [ [%e default_name_expr] ]]
       in
