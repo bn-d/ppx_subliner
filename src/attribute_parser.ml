@@ -110,7 +110,12 @@ module Term = struct
     last : 'a option;
     (* type *)
     default : 'a option;
-        (* TODO: support list_sep, array_sep, tuple_sep, file, dir, non_dir_file, rev *)
+    sep : 'a option;
+    list_sep : 'a option;
+    array_sep : 'a option;
+    tuple_sep : 'a option;
+        (* TODO: enhance env *)
+        (* TODO: support file, dir, non_dir_file, rev *)
   }
   [@@deriving make]
 
@@ -134,9 +139,14 @@ module Term = struct
         non_empty;
         last;
         default;
+        sep;
+        list_sep;
+        array_sep;
+        tuple_sep;
       } =
     let f = Option.map f in
     {
+      (* info *)
       deprecated = f deprecated;
       absent = f absent;
       docs = f docs;
@@ -151,10 +161,15 @@ module Term = struct
       pos_all = f pos_all;
       pos_left = f pos_left;
       pos_right = f pos_right;
-      (* list *)
+      (* as term *)
       non_empty = f non_empty;
       last = f last;
+      (* type *)
       default = f default;
+      sep = f sep;
+      list_sep = f list_sep;
+      array_sep = f array_sep;
+      tuple_sep = f tuple_sep;
     }
 
   let tag_of_string = function
@@ -173,6 +188,10 @@ module Term = struct
     | "non_empty" -> Some `non_empty
     | "last" -> Some `last
     | "default" -> Some `default
+    | "sep" -> Some `sep
+    | "list_sep" -> Some `list_sep
+    | "array_sep" -> Some `array_sep
+    | "tuple_sep" -> Some `tuple_sep
     | _ -> None
 
   let update_field_of_tag tag v t =
@@ -192,6 +211,10 @@ module Term = struct
     | `non_empty -> { t with non_empty = Level.join t.non_empty v }
     | `last -> { t with last = Level.join t.last v }
     | `default -> { t with default = Level.join t.default v }
+    | `sep -> { t with sep = Level.join t.sep v }
+    | `list_sep -> { t with list_sep = Level.join t.list_sep v }
+    | `array_sep -> { t with array_sep = Level.join t.array_sep v }
+    | `tuple_sep -> { t with tuple_sep = Level.join t.tuple_sep v }
 
   let parse attrs =
     parse_impl ~empty ~map ~tag_of_string ~update_field_of_tag attrs
