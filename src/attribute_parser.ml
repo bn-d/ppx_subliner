@@ -105,10 +105,10 @@ module Term = struct
     pos_all : 'a option;
     pos_left : 'a option;
     pos_right : 'a option;
-    (* list *)
+    (* as term *)
     non_empty : 'a option;
     last : 'a option;
-    (* misc *)
+    (* type *)
     default : 'a option;
         (* TODO: support list_sep, array_sep, tuple_sep, file, dir, non_dir_file, rev *)
   }

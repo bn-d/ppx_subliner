@@ -21,4 +21,5 @@
   (ppx_make (>= 0.3.0))
   (alcotest :with-test)
   (ppx_deriving_cmdliner :with-test)
+  (ppx_show :with-test)
   (bisect_ppx :with-test)))
