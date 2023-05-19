@@ -96,7 +96,9 @@ let cmd_vb_expr_of_const_decl
           let cmd_info_expr =
             (* lower case constructor name will be the default cmd name *)
             let default_name_expr =
-              Ast_builder.Default.estring ~loc:cd.pcd_name.loc name_str
+              name_str
+              |> String.map (function '_' -> '-' | c -> c)
+              |> Ast_builder.Default.estring ~loc:cd.pcd_name.loc
             in
             Info.expr_of_attrs ~loc default_name_expr cd.pcd_attributes
             (* ('params -> 'result) * 'params Term.t *)
