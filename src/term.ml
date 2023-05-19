@@ -159,7 +159,7 @@ module Named = struct
                 default
             in
             (`last (), `opt (Conv.List conv, default_expr))
-        | `non_empty, _ -> Error.non_empty_list ~loc
+        | `non_empty, _ -> Error.attr_list_type ~loc "non_empty"
       else
         match (as_term, conv) with
         | `value default, List in_conv ->
@@ -174,8 +174,7 @@ module Named = struct
                 default
             in
             (`last (), `opt_all (conv, default_expr))
-        | _ ->
-            Location.raise_errorf ~loc "`opt_all` must be used with list type"
+        | _ -> Error.attr_list_type ~loc "opt_all"
     and names_expr =
       (* field name will be the default arg name *)
       let default_names_expr =
@@ -258,7 +257,7 @@ module Positional = struct
                   default
               in
               (`last (), List conv, default_expr)
-          | `non_empty, _ -> Error.non_empty_list ~loc)
+          | `non_empty, _ -> Error.attr_list_type ~loc "non_empty")
       | `pos_left _ | `pos_right _ | `pos_all -> (
           match (as_term, conv) with
           | `value default, List in_conv ->
