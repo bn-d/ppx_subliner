@@ -1,1 +1,1 @@
-Tests had been modified to be compatible with `ppx_subliner` and `ppx_show`.
+The tests is copy from [ppx_deriving_cmdliner](https://github.com/hammerlab/ppx_deriving_cmdliner) and is modified to use `ppx_subliner` and `ppx_show`.
