@@ -32,6 +32,9 @@ let test_set =
     test "List.t" (List Int) [%type: int List.t];
     test "array" (Array Int) [%type: int array];
     test "Array.t" (Array Int) [%type: int Array.t];
+    test "pair" (Pair (Int, Float)) [%type: int * float];
+    test "t3" (T3 (Int, Float, Char)) [%type: int * float * char];
+    test "t4" (T4 (Int, Float, Char, Bool)) [%type: int * float * char * bool];
     test "nested" (List (List Int)) [%type: int list list];
     test_raises "invalid_1" ~exn:"unsupported field type" [%type: int seq];
     test_raises "invalid_2" ~exn:"unsupported field type" [%type: unit];

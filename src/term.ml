@@ -26,7 +26,9 @@ module Conv = struct
     | Option of t
     | List of t
     | Array of t
-  (* TODO: support Pair | T3 | T4 *)
+    | Pair of t * t
+    | T3 of t * t * t
+    | T4 of t * t * t * t
 
   let rec of_core_type : core_type -> t = function
     | [%type: bool] | [%type: Bool.t] -> Bool
@@ -43,12 +45,18 @@ module Conv = struct
         List (of_core_type ct)
     | [%type: [%t? ct] array] | [%type: [%t? ct] Array.t] ->
         Array (of_core_type ct)
+    | [%type: [%t? t0] * [%t? t1]] -> Pair (of_core_type t0, of_core_type t1)
+    | [%type: [%t? t0] * [%t? t1] * [%t? t2]] ->
+        T3 (of_core_type t0, of_core_type t1, of_core_type t2)
+    | [%type: [%t? t0] * [%t? t1] * [%t? t2] * [%t? t3]] ->
+        T4 (of_core_type t0, of_core_type t1, of_core_type t2, of_core_type t3)
     | { ptyp_loc = loc; _ } -> Error.field_type ~loc
 
   let to_expr ~loc (_attrs : attrs) t : expression =
     (* TODO: impl sep *)
     let list_sep_expr = None |> Option.value ~default:[%expr None]
-    and array_sep_expr = None |> Option.value ~default:[%expr None] in
+    and array_sep_expr = None |> Option.value ~default:[%expr None]
+    and tuple_sep_expr = None |> Option.value ~default:[%expr None] in
     let rec impl ~loc = function
       | Bool -> [%expr bool]
       | Char -> [%expr char]
@@ -70,6 +78,23 @@ module Conv = struct
       | Array t ->
           let expr = impl ~loc t in
           [%expr array ?sep:[%e array_sep_expr] [%e expr]]
+      | Pair (t0, t1) ->
+          let t0_expr = impl ~loc t0 and t1_expr = impl ~loc t1 in
+          [%expr pair ?sep:[%e tuple_sep_expr] [%e t0_expr] [%e t1_expr]]
+      | T3 (t0, t1, t2) ->
+          let t0_expr = impl ~loc t0
+          and t1_expr = impl ~loc t1
+          and t2_expr = impl ~loc t2 in
+          [%expr
+            t3 ?sep:[%e tuple_sep_expr] [%e t0_expr] [%e t1_expr] [%e t2_expr]]
+      | T4 (t0, t1, t2, t3) ->
+          let t0_expr = impl ~loc t0
+          and t1_expr = impl ~loc t1
+          and t2_expr = impl ~loc t2
+          and t3_expr = impl ~loc t3 in
+          [%expr
+            t4 ?sep:[%e tuple_sep_expr] [%e t0_expr] [%e t1_expr] [%e t2_expr]
+              [%e t3_expr]]
     in
 
     let expr = impl ~loc t in
