@@ -6,7 +6,6 @@ module Attr = Ppx_subliner.Attribute_parser.Term
 type attrs = Ppx_subliner.Term.attrs
 
 let loc = Location.none
-let msg = "actual is different from expected"
 
 module Info = struct
   module M = Ppx_subliner.Term.Info
@@ -40,7 +39,7 @@ let test_equal term t prefix name expected argv =
   test
     (fun expected result ->
       match result with
-      | Ok (`Ok actual) -> Alcotest.check t msg expected actual
+      | Ok (`Ok actual) -> Alcotest.check t Utils.diff_msg expected actual
       | Ok _ -> Alcotest.fail "unexpected eva_ok result"
       | Error e ->
           Alcotest.failf "eval error: %s" @@ Utils.eval_error_to_string e)
@@ -50,7 +49,8 @@ let test_error term prefix name expected argv =
   test
     (fun expected actual ->
       match actual with
-      | Error actual -> Alcotest.check Utils.eval_error msg expected actual
+      | Error actual ->
+          Alcotest.check Utils.eval_error Utils.diff_msg expected actual
       | Ok _ -> Alcotest.fail "test expected to fail")
     term prefix name expected argv
 
