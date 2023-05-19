@@ -3,14 +3,9 @@ open Ppx_subliner.Term.As_term
 module Attr = Ppx_subliner.Attribute_parser.Term
 
 let loc = Location.none
-let t = Alcotest.testable (fun _ _ -> ()) ( = )
-
-let test name expected attrs =
-  let f () = of_attrs ~loc attrs |> Alcotest.check t Utils.diff_msg expected in
-  Alcotest.test_case name `Quick f
-
-let test_raises name ~exn attrs =
-  Utils.test_raises name ~exn (fun () -> of_attrs ~loc attrs)
+let t = Alcotest.of_pp (fun _ _ -> ())
+let test = Utils.test_equal t (of_attrs ~loc)
+let test_raises = Utils.test_raises (of_attrs ~loc)
 
 let test_set =
   let unit_expr = [%expr ()] in

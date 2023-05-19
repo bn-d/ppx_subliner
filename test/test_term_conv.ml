@@ -3,18 +3,10 @@ open Ppx_subliner.Term.Conv
 module Attr = Ppx_subliner.Attribute_parser.Term
 
 let loc = Location.none
-let t = Alcotest.testable (fun _ _ -> ()) ( = )
-
-let test name (expected : t) (ct : core_type) =
-  let f () = of_core_type ct |> Alcotest.check t Utils.diff_msg expected in
-  Alcotest.test_case name `Quick f
-
-let test_raises name ~exn (ct : core_type) =
-  Utils.test_raises name ~exn (fun () -> of_core_type ct)
-
-let test_gen name (func : expression -> bool) (t : t) =
-  let f () = assert (to_expr ~loc Attr.empty t |> func) in
-  Alcotest.test_case ("gen." ^ name) `Quick f
+let t = Alcotest.of_pp (fun _ _ -> ())
+let test = Utils.test_equal t of_core_type
+let test_raises = Utils.test_raises of_core_type
+let test_gen name = Utils.testf (to_expr ~loc Attr.empty) ("gen." ^ name)
 
 let test_set =
   [
