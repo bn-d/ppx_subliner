@@ -11,24 +11,18 @@ let msg = "actual is different from expected"
 module Info = struct
   module M = Ppx_subliner.Term.Info
 
-  let test_gen name (attrs : attrs) (func : expression -> bool) =
-    let f () = assert (M.expr_of_attrs ~loc [%expr [ "NAME" ]] attrs |> func) in
-    Alcotest.test_case ("gen." ^ name) `Quick f
+  let t = Alcotest.of_pp (fun _ _ -> ())
+  let test_gen = Utils.test_equal t (M.expr_of_attrs ~loc [%expr [ "NAME" ]])
 
   let test_set =
     let u = (loc, [%str ()]) in
     [
-      test_gen "empty" Attr.empty (function
-        | [%expr Cmdliner.Arg.info [ "NAME" ]] -> true
-        | _ -> false);
+      test_gen "empty" [%expr Cmdliner.Arg.info [ "NAME" ]] Attr.empty;
       test_gen "all"
-        (Attr.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u ())
-        (function
-        | [%expr
-            Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:()
-              ~doc:() ~env:() [ "NAME" ]] ->
-            true
-        | _ -> false);
+        [%expr
+          Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:() ~doc:()
+            ~env:() [ "NAME" ]]
+        (Attr.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u ());
     ]
 end
 

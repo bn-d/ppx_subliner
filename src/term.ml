@@ -143,9 +143,34 @@ module Named = struct
   let expr_of_attrs ~loc name ct (attrs : attrs) : expression =
     let as_term, type_ =
       let as_term = As_term.of_attrs ~loc attrs
-      and conv = Conv.of_core_type ct in
-      let () = ignore (as_term, conv) in
-      failwith ""
+      and conv = Conv.of_core_type ct
+      and opt_all = Attribute_parser.to_bool attrs.opt_all in
+      if not opt_all then
+        match (as_term, conv) with
+        | `value (Some default_expr), _ -> (`value (), `opt (conv, default_expr))
+        | `value None, Option _ -> (`value (), `opt (conv, [%expr None]))
+        | `value None, _ -> (`required, `opt (Option conv, [%expr None]))
+        | `non_empty, List _ -> (`non_empty, `opt (conv, [%expr []]))
+        | `last default, _ ->
+            let default_expr =
+              Option.fold ~none:[%expr []]
+                ~some:(fun expr -> [%expr [ [%e expr] ]])
+                default
+            in
+            (`last (), `opt (List conv, default_expr))
+        | `non_empty, _ -> Error.non_empty_list ~loc
+      else
+        match (as_term, conv) with
+        | `value default, List in_conv ->
+            let default_expr = Option.value ~default:[%expr []] default in
+            (`value (), `opt_all (in_conv, default_expr))
+        | `non_empty, List in_conv ->
+            (`non_empty, `opt_all (in_conv, [%expr []]))
+        | `last default, _ ->
+            let default_expr = Option.value ~default:[%expr []] default in
+            (`last (), `opt_all (conv, default_expr))
+        | _ ->
+            Location.raise_errorf ~loc "`opt_all` must be used with list type"
     and names_expr =
       (* field name will be the default arg name *)
       let default_names_expr =
@@ -185,8 +210,12 @@ module Positional = struct
       |> Attribute_parser.to_expr_opt
       |> Option.fold ~none:() ~some:(fun _ ->
              Error.f ~loc "`names` cannot be used with positional argument")
+    and () =
+      if Attribute_parser.to_bool attrs.opt_all then
+        Error.f ~loc "`opt_all` cannot be used with positional argument"
+      else
+        ()
     in
-    (* TODO: opt_all error *)
     let type_ =
       let rev = false (* TODO: support rev *) in
       match attrs with
@@ -207,40 +236,41 @@ module Positional = struct
       | _ -> Error.unexpected ~loc
     in
 
-    let as_term, default_expr, conv =
+    let as_term, conv, default_expr =
       let as_term = As_term.of_attrs ~loc attrs
       and conv = Conv.of_core_type ct in
       match type_ with
       | `pos _ -> (
           match (as_term, conv) with
-          | `value (Some default_expr), _ -> (`value (), default_expr, conv)
-          | `value None, Option _ -> (`value (), [%expr None], conv)
-          | `value None, _ -> (`required, [%expr None], Option conv)
-          | `non_empty, List _ -> (`non_empty, [%expr []], conv)
+          | `value (Some default_expr), _ -> (`value (), conv, default_expr)
+          | `value None, Option _ -> (`value (), conv, [%expr None])
+          | `value None, _ -> (`required, Option conv, [%expr None])
+          | `non_empty, List _ -> (`non_empty, conv, [%expr []])
           | `last default, _ ->
               let default_expr =
                 Option.fold ~none:[%expr []]
                   ~some:(fun expr -> [%expr [ [%e expr] ]])
                   default
               in
-              (`last (), default_expr, List conv)
+              (`last (), List conv, default_expr)
           | `non_empty, _ -> Error.non_empty_list ~loc)
       | `pos_left _ | `pos_right _ | `pos_all -> (
           match (as_term, conv) with
           | `value default, List in_conv ->
               let default_expr = Option.value ~default:[%expr []] default in
-              (`value (), default_expr, in_conv)
-          | `non_empty, List in_conv -> (`non_empty, [%expr []], in_conv)
+              (`value (), in_conv, default_expr)
+          | `non_empty, List in_conv -> (`non_empty, in_conv, [%expr []])
           | `last default, _ ->
               let default_expr =
                 Option.fold ~none:[%expr []]
                   ~some:(fun expr -> [%expr [ [%e expr] ]])
                   default
               in
-              (`last (), default_expr, conv)
-          | _, _ ->
+              (`last (), conv, default_expr)
+          | _ ->
               Location.raise_errorf ~loc
-                "`pos_left`, `pos_right` and `pos_all` type must be a list")
+                "`pos_left`, `pos_right` and `pos_all` must be used with list \
+                 type")
     in
 
     let as_term_expr = As_term.to_expr ~loc as_term
