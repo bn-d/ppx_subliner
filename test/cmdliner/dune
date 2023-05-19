@@ -3,5 +3,4 @@
  (libraries alcotest result ppx_show.runtime)
  (flags :standard -w -27-39)
  (preprocess
-  (pps ppx_show ppx_subliner))
-  )
+  (pps ppx_show ppx_subliner)))
