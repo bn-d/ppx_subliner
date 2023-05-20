@@ -1,4 +1,4 @@
-type foo = { my_arg : string } [@@deriving cmdliner]
+type foo = { my_arg : string } [@@deriving subliner]
 type params = Foo of foo | Bar [@@deriving subliner]
 
 let handle = function
