@@ -1,4 +1,5 @@
 open Ppxlib
+module Ap = Ppx_subliner.Attribute_parser
 
 let loc = Location.none
 
@@ -165,5 +166,18 @@ module Cmd_info = struct
       test "version.s" (M.make_t ~version:() ()) [%expr t [@subliner.version]];
       test "name" (M.make_t ~name:() ()) [%expr t [@name]];
       test "name.s" (M.make_t ~name:() ()) [%expr t [@subliner.name]];
+    ]
+end
+
+module Single = struct
+  let test f name =
+    Utils.test_equal Utils.pp
+      (fun e -> e.pexp_attributes |> f |> Option.map (fun _ -> ()))
+      name
+
+  let test_set =
+    [
+      test Ap.Sep_conv.parse "sep" (Some ()) [%expr t [@sep]];
+      test Ap.Sep_conv.parse "sep.s" (Some ()) [%expr t [@subliner.sep]];
     ]
 end

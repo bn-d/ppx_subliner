@@ -1,4 +1,5 @@
 open Ppxlib
+module Ap = Attribute_parser
 
 let suffix = "cmdliner_term"
 
@@ -8,7 +9,7 @@ let gen_name_str = function
 
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
-type attrs = (location * structure) Attribute_parser.Term.t
+type attrs = (location * structure) Ap.Term.t
 
 module Conv = struct
   type t =
@@ -39,10 +40,10 @@ module Conv = struct
     | [%type: int64] | [%type: Int64.t] -> Int64
     | [%type: float] | [%type: Float.t] -> Float
     | ([%type: string] | [%type: String.t]) as ct ->
-        let attrs = Attribute_parser.String_conv.parse ct.ptyp_attributes in
-        let file = Attribute_parser.to_bool attrs.file
-        and dir = Attribute_parser.to_bool attrs.dir
-        and non_dir_file = Attribute_parser.to_bool attrs.non_dir_file in
+        let attrs = Ap.String_conv.parse ct.ptyp_attributes in
+        let file = Ap.to_bool attrs.file
+        and dir = Ap.to_bool attrs.dir
+        and non_dir_file = Ap.to_bool attrs.non_dir_file in
         if file && not (dir || non_dir_file) then
           File
         else if dir && not (file || non_dir_file) then
@@ -55,19 +56,24 @@ module Conv = struct
           Location.raise_errorf ~loc:ct.ptyp_loc
             "only one of `dir`, `file` and `non_dir_file` can be specified at \
              the same time"
-    | [%type: [%t? ct] option] | [%type: [%t? ct] Option.t] ->
-        Option (of_core_type ct)
-    | [%type: [%t? ct] list] | [%type: [%t? ct] List.t] ->
-        List (None, of_core_type ct)
-    | [%type: [%t? ct] array] | [%type: [%t? ct] Array.t] ->
-        Array (None, of_core_type ct)
-    | [%type: [%t? t0] * [%t? t1]] ->
-        Pair (None, (of_core_type t0, of_core_type t1))
-    | [%type: [%t? t0] * [%t? t1] * [%t? t2]] ->
-        T3 (None, (of_core_type t0, of_core_type t1, of_core_type t2))
-    | [%type: [%t? t0] * [%t? t1] * [%t? t2] * [%t? t3]] ->
+    | [%type: [%t? in_ct] option] | [%type: [%t? in_ct] Option.t] ->
+        Option (of_core_type in_ct)
+    | ([%type: [%t? in_ct] list] as ct) | ([%type: [%t? in_ct] List.t] as ct) ->
+        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
+        List (sep, of_core_type in_ct)
+    | ([%type: [%t? in_ct] array] | [%type: [%t? in_ct] Array.t]) as ct ->
+        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
+        Array (sep, of_core_type in_ct)
+    | [%type: [%t? t0] * [%t? t1]] as ct ->
+        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
+        Pair (sep, (of_core_type t0, of_core_type t1))
+    | [%type: [%t? t0] * [%t? t1] * [%t? t2]] as ct ->
+        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
+        T3 (sep, (of_core_type t0, of_core_type t1, of_core_type t2))
+    | [%type: [%t? t0] * [%t? t1] * [%t? t2] * [%t? t3]] as ct ->
+        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
         T4
-          ( None,
+          ( sep,
             (of_core_type t0, of_core_type t1, of_core_type t2, of_core_type t3)
           )
     | { ptyp_loc = loc; _ } -> Error.field_type ~loc
@@ -145,7 +151,7 @@ module Info = struct
     Ast_helper.with_default_loc loc (fun () ->
         let args =
           let labelled =
-            let f = Attribute_parser.to_expr_opt in
+            let f = Ap.to_expr_opt in
             [
               ("deprecated", f attrs.deprecated);
               ("absent", f attrs.absent);
@@ -167,9 +173,9 @@ module As_term = struct
   let of_attrs ~loc (attrs : attrs) :
       [ `value of expression option | `non_empty | `last of expression option ]
       =
-    let non_empty = Attribute_parser.to_bool attrs.non_empty
-    and last = Attribute_parser.to_bool attrs.last
-    and default = Attribute_parser.to_expr_opt attrs.default in
+    let non_empty = Ap.to_bool attrs.non_empty
+    and last = Ap.to_bool attrs.last
+    and default = Ap.to_expr_opt attrs.default in
     match (non_empty, last, default) with
     | true, false, None -> `non_empty
     | true, true, _ ->
@@ -205,7 +211,7 @@ module Named = struct
     let as_term, type_ =
       let as_term = As_term.of_attrs ~loc attrs
       and conv = Conv.of_core_type ct
-      and opt_all = Attribute_parser.to_bool attrs.opt_all in
+      and opt_all = Ap.to_bool attrs.opt_all in
       if not opt_all then
         match (as_term, conv) with
         | `value None, Bool -> (`value (), `flag)
@@ -250,9 +256,7 @@ module Named = struct
         in
         [%expr [ [%e default_name_expr] ]]
       in
-      attrs.names
-      |> Attribute_parser.to_expr_opt
-      |> Option.value ~default:default_names_expr
+      attrs.names |> Ap.to_expr_opt |> Option.value ~default:default_names_expr
     in
 
     let as_term_expr = As_term.to_expr ~loc as_term
@@ -278,11 +282,11 @@ module Positional = struct
   let expr_of_attrs ~loc ct (attrs : attrs) : expression =
     let () =
       attrs.names
-      |> Attribute_parser.to_expr_opt
+      |> Ap.to_expr_opt
       |> Option.fold ~none:() ~some:(fun _ ->
              Error.f ~loc "`names` cannot be used with positional argument")
     and () =
-      if Attribute_parser.to_bool attrs.opt_all then
+      if Ap.to_bool attrs.opt_all then
         Error.f ~loc "`opt_all` cannot be used with positional argument"
       else
         ()
@@ -291,18 +295,18 @@ module Positional = struct
       let rev = false (* TODO: support rev *) in
       match attrs with
       | { pos = Some pos; _ } ->
-          let pos_expr = Attribute_parser.to_expr pos in
+          let pos_expr = Ap.to_expr pos in
           `pos (rev, pos_expr)
       | { pos_left = Some pos; _ } ->
-          let pos_expr = Attribute_parser.to_expr pos in
+          let pos_expr = Ap.to_expr pos in
           `pos_left (rev, pos_expr)
       | { pos_right = Some pos; _ } ->
-          let pos_expr = Attribute_parser.to_expr pos in
+          let pos_expr = Ap.to_expr pos in
           `pos_right (rev, pos_expr)
       | { pos_all = Some _; _ } when rev ->
           Location.raise_errorf ~loc "`rev` cannot be used with `pos_all`"
       | { pos_all = Some pos; _ } ->
-          let _ = Attribute_parser.to_bool (Some pos) in
+          let _ = Ap.to_bool (Some pos) in
           `pos_all
       | _ -> Error.unexpected ~loc
     in
@@ -412,7 +416,7 @@ let term_vb_expr_of_label_decl (ld : label_declaration) =
         let pat = Ast_helper.Pat.var var_name
         and expr =
           ld.pld_attributes
-          |> Attribute_parser.Term.parse
+          |> Ap.Term.parse
           |> T.expr_of_attrs ~loc ld.pld_name ld.pld_type
         in
         Ast_helper.Vb.mk pat expr

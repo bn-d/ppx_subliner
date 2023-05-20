@@ -51,6 +51,11 @@ module String_conv : sig
   (** parse attribute list to a static type *)
 end
 
+module Sep_conv : sig
+  val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) option
+  (** parse attribute list to a static type *)
+end
+
 module Cmd_info : sig
   type 'a t = {
     deprecated : 'a option;

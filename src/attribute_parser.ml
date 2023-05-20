@@ -77,6 +77,14 @@ let parse_impl
        empty
   |> map Level.get
 
+let parse_single name attrs =
+  let tag_of_string s = if s = name then Some `current else None
+  and update_field_of_tag tag v t =
+    match tag with `current -> Level.join t v | `doc -> t
+  in
+  parse_impl ~empty:None ~map:Option.map ~tag_of_string ~update_field_of_tag
+    attrs
+
 let to_bool =
   Option.fold ~none:false ~some:(function
     | _, [] -> true
@@ -245,6 +253,10 @@ module String_conv = struct
 
   let parse attrs =
     parse_impl ~empty ~map ~tag_of_string ~update_field_of_tag attrs
+end
+
+module Sep_conv = struct
+  let parse = parse_single "sep"
 end
 
 module Cmd_info = struct
