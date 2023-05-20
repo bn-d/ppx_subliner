@@ -216,7 +216,6 @@ module Named = struct
             let default_expr =
               Option.fold ~none:[%expr []] ~some:(Utils.elist ~loc) default
             in
-            (* TODO: read sep for last *)
             (`last (), `opt (Conv.List (sep, conv), default_expr))
         | `non_empty, _ -> Error.attr_list_type ~loc "non_empty"
       else
