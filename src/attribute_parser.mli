@@ -40,6 +40,17 @@ module Term : sig
   (** parse attribute list to a static type *)
 end
 
+module String_conv : sig
+  type 'a t = { file : 'a option; dir : 'a option; non_dir_file : 'a option }
+  [@@deriving make]
+
+  val empty : 'a t
+  val map : ('a -> 'b) -> 'a t -> 'b t
+
+  val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) t
+  (** parse attribute list to a static type *)
+end
+
 module Cmd_info : sig
   type 'a t = {
     deprecated : 'a option;
