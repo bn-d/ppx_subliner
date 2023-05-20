@@ -96,40 +96,30 @@ module Conv = struct
           [%expr some [%e expr]]
       | List (sep, t) ->
           let sep_expr =
-            Option.fold ~none:[%expr None]
-              ~some:(fun e -> [%expr Some [%e e]])
-              sep
+            Option.fold ~none:[%expr None] ~some:(Utils.esome ~loc) sep
           and expr = impl ~loc t in
           [%expr list ?sep:[%e sep_expr] [%e expr]]
       | Array (sep, t) ->
           let sep_expr =
-            Option.fold ~none:[%expr None]
-              ~some:(fun e -> [%expr Some [%e e]])
-              sep
+            Option.fold ~none:[%expr None] ~some:(Utils.esome ~loc) sep
           and expr = impl ~loc t in
           [%expr array ?sep:[%e sep_expr] [%e expr]]
       | Pair (sep, (t0, t1)) ->
           let sep_expr =
-            Option.fold ~none:[%expr None]
-              ~some:(fun e -> [%expr Some [%e e]])
-              sep
+            Option.fold ~none:[%expr None] ~some:(Utils.esome ~loc) sep
           and t0_expr = impl ~loc t0
           and t1_expr = impl ~loc t1 in
           [%expr pair ?sep:[%e sep_expr] [%e t0_expr] [%e t1_expr]]
       | T3 (sep, (t0, t1, t2)) ->
           let sep_expr =
-            Option.fold ~none:[%expr None]
-              ~some:(fun e -> [%expr Some [%e e]])
-              sep
+            Option.fold ~none:[%expr None] ~some:(Utils.esome ~loc) sep
           and t0_expr = impl ~loc t0
           and t1_expr = impl ~loc t1
           and t2_expr = impl ~loc t2 in
           [%expr t3 ?sep:[%e sep_expr] [%e t0_expr] [%e t1_expr] [%e t2_expr]]
       | T4 (sep, (t0, t1, t2, t3)) ->
           let sep_expr =
-            Option.fold ~none:[%expr None]
-              ~some:(fun e -> [%expr Some [%e e]])
-              sep
+            Option.fold ~none:[%expr None] ~some:(Utils.esome ~loc) sep
           and t0_expr = impl ~loc t0
           and t1_expr = impl ~loc t1
           and t2_expr = impl ~loc t2
@@ -221,9 +211,7 @@ module Named = struct
         | `non_empty, List _ -> (`non_empty, `opt (conv, [%expr []]))
         | `last default, _ ->
             let default_expr =
-              Option.fold ~none:[%expr []]
-                ~some:(fun expr -> [%expr [ [%e expr] ]])
-                default
+              Option.fold ~none:[%expr []] ~some:(Utils.elist ~loc) default
             in
             (* TODO: read sep for last *)
             (`last (), `opt (Conv.List (None, conv), default_expr))
@@ -237,9 +225,7 @@ module Named = struct
             (`non_empty, `opt_all (in_conv, [%expr []]))
         | `last default, _ ->
             let default_expr =
-              Option.fold ~none:[%expr []]
-                ~some:(fun expr -> [%expr [ [%e expr] ]])
-                default
+              Option.fold ~none:[%expr []] ~some:(Utils.elist ~loc) default
             in
             (`last (), `opt_all (conv, default_expr))
         | _, List (Some _, _) ->
@@ -249,12 +235,10 @@ module Named = struct
     and names_expr =
       (* field name will be the default arg name *)
       let default_names_expr =
-        let default_name_expr =
-          name.txt
-          |> String.map (function '_' -> '-' | c -> c)
-          |> Ast_builder.Default.estring ~loc:name.loc
-        in
-        [%expr [ [%e default_name_expr] ]]
+        name.txt
+        |> String.map (function '_' -> '-' | c -> c)
+        |> Ast_builder.Default.estring ~loc:name.loc
+        |> Utils.elist ~loc
       in
       attrs.names |> Ap.to_expr_opt |> Option.value ~default:default_names_expr
     in
@@ -323,9 +307,7 @@ module Positional = struct
           | `non_empty, List _ -> (`non_empty, conv, [%expr []])
           | `last default, _ ->
               let default_expr =
-                Option.fold ~none:[%expr []]
-                  ~some:(fun expr -> [%expr [ [%e expr] ]])
-                  default
+                Option.fold ~none:[%expr []] ~some:(Utils.elist ~loc) default
               in
               (* TODO: read sep for last *)
               (`last (), List (None, conv), default_expr)
@@ -338,9 +320,7 @@ module Positional = struct
           | `non_empty, List (None, in_conv) -> (`non_empty, in_conv, [%expr []])
           | `last default, _ ->
               let default_expr =
-                Option.fold ~none:[%expr []]
-                  ~some:(fun expr -> [%expr [ [%e expr] ]])
-                  default
+                Option.fold ~none:[%expr []] ~some:(Utils.elist ~loc) default
               in
               (`last (), conv, default_expr)
           | _, List (Some _, _) ->
