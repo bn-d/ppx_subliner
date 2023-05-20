@@ -173,7 +173,7 @@ type params = { foo : string list [@non_empty] }
 
 Only evaluates the last element of the list.
 
-[[@sep char]] can be used with this attribute to set the separator of the list.
+[[@last.sep char]] can be used with this attribute to set the separator of the list.
 
 Conflict with {!attr_non_empty}.
 
