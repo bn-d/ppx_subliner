@@ -1,4 +1,5 @@
 open Ppxlib
+module Ap = Attribute_parser
 
 type eval_type = Cmds | Term
 
@@ -21,7 +22,8 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
         let default_name_expr = [%expr Filename.basename Sys.argv.(0)] in
         Group_cmds.Info.expr_of_attrs ~loc default_name_expr attrs
       and default_term_expr =
-        Attribute_parser.Default_term.get attrs
+        Ap.Default_term.parse attrs
+        |> Ap.to_expr_opt
         |> Option.value
              ~default:[%expr Cmdliner.Term.(ret (const (`Help (`Auto, None))))]
       and group_cmd_fun_expr =
@@ -67,7 +69,6 @@ let eval_fun_of_payload ~loc ~attrs t : payload -> structure_item = function
   | _ -> unsupported_error ~loc
 
 let impl (strs : structure_item list) : structure_item list =
-  (* TODO: take care module doc *)
   List.filter_map
     (fun str ->
       let loc = str.pstr_loc in

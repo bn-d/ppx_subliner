@@ -26,17 +26,6 @@ module Level = struct
   let prefixed opt = Option.map (fun v -> Prefixed v) opt
 end
 
-let get_expr name (attrs : attributes) =
-  attrs
-  |> Utils.list_find_map (fun (attr : attribute) ->
-         if attr.attr_name.txt = name || attr.attr_name.txt = prefix ^ name then
-           let loc = attr.attr_loc in
-           match attr.attr_payload with
-           | PStr [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> Some expr
-           | _ -> Error.attribute_payload ~loc
-         else
-           None)
-
 let parse_impl
     ~empty
     ~map
@@ -315,5 +304,5 @@ module Cmd_info = struct
 end
 
 module Default_term = struct
-  let get : attributes -> expression option = get_expr "default"
+  let parse = parse_single "default"
 end

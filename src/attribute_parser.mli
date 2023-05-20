@@ -75,5 +75,6 @@ module Cmd_info : sig
 end
 
 module Default_term : sig
-  val get : Ppxlib.attributes -> Ppxlib.expression option
+  val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) option
+  (** parse attribute list to a static type *)
 end

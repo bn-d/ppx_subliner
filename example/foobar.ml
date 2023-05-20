@@ -8,5 +8,7 @@ let handle = function
 (* {eval function}.{type name} <- {function expression> *)
 [%%subliner.cmds
 eval.params <- handle]
-[@@name "foobar"] [@@version "3.14"]
+[@@name "foobar"]
+[@@version "3.14"]
+[@@default Cmdliner.Term.(ret (const (`Error (false, "foobar2000"))))]
 (** Some docs *)

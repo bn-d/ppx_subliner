@@ -4,7 +4,7 @@ module Ap = Ppx_subliner.Attribute_parser
 let loc = Location.none
 
 module Term = struct
-  module M = Ppx_subliner.Attribute_parser.Term
+  module M = Ap.Term
 
   let test =
     Utils.test_equal Utils.pp (fun e ->
@@ -93,7 +93,7 @@ module Common = struct
 end
 
 module String_conv = struct
-  module M = Ppx_subliner.Attribute_parser.String_conv
+  module M = Ap.String_conv
 
   let test =
     Utils.test_equal Utils.pp (fun e ->
@@ -115,7 +115,7 @@ module String_conv = struct
 end
 
 module Cmd_info = struct
-  module M = Ppx_subliner.Attribute_parser.Cmd_info
+  module M = Ap.Cmd_info
 
   let test =
     Utils.test_equal Utils.pp (fun e ->
