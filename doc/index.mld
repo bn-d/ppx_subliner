@@ -22,8 +22,8 @@ by tagging [[@@deriving subliner]] to a record type.
 
 For record type [params], function [params_cmdliner_term] with type
 [unit -> params Cmdliner.Term.t] will be generated. A command line argument will
-be generated for each field in the record. {!arg_attr} can be attached to fields
-or types to modify the behavior of the corresponding arguments.
+be generated for each field in the record. {!term_attr} and {!type_attr} can be
+attached to fields or types to modify the behavior of the corresponding arguments.
 
 {[
 type foo = { my_arg : string } [@@deriving_inline subliner]
@@ -115,7 +115,7 @@ All attributes may be prefixed with [subliner.] to avoid conflicts with other
 extensions.
 
 
-{2:arg_attr [Arg] Attributes}
+{2:term_attr [Term] Attributes}
 
 {3 [[@names string list]]}
 
