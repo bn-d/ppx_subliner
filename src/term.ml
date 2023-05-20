@@ -52,11 +52,18 @@ module Conv = struct
         T4 (of_core_type t0, of_core_type t1, of_core_type t2, of_core_type t3)
     | { ptyp_loc = loc; _ } -> Error.field_type ~loc
 
-  let to_expr ~loc (_attrs : attrs) t : expression =
-    (* TODO: impl sep *)
-    let list_sep_expr = None |> Option.value ~default:[%expr None]
-    and array_sep_expr = None |> Option.value ~default:[%expr None]
-    and tuple_sep_expr = None |> Option.value ~default:[%expr None] in
+  let to_expr ~loc (attrs : attrs) t : expression =
+    let sep_expr = attrs.sep |> Attribute_parser.to_expr_opt in
+    let get_sep_expr attr =
+      attr
+      |> Attribute_parser.to_expr_opt
+      |> Option.fold ~none:sep_expr ~some:Option.some
+      |> Option.fold ~none:[%expr None] ~some:(fun e -> [%expr Some [%e e]])
+    in
+
+    let list_sep_expr = get_sep_expr attrs.list_sep
+    and array_sep_expr = get_sep_expr attrs.array_sep
+    and tuple_sep_expr = get_sep_expr attrs.tuple_sep in
     let rec impl ~loc = function
       | Bool -> [%expr bool]
       | Char -> [%expr char]

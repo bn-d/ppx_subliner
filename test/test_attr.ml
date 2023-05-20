@@ -5,10 +5,8 @@ let loc = Location.none
 module Term = struct
   module M = Ppx_subliner.Attribute_parser.Term
 
-  let t = Alcotest.of_pp (fun _ _ -> ())
-
   let test =
-    Utils.test_equal t (fun e ->
+    Utils.test_equal Utils.pp (fun e ->
         e.pexp_attributes |> M.parse |> M.map (fun _ -> ()))
 
   let test_raises = Utils.test_raises (fun e -> M.parse e.pexp_attributes)
@@ -96,10 +94,8 @@ end
 module Cmd_info = struct
   module M = Ppx_subliner.Attribute_parser.Cmd_info
 
-  let t = Alcotest.of_pp (fun _ _ -> ())
-
   let test =
-    Utils.test_equal t (fun e ->
+    Utils.test_equal Utils.pp (fun e ->
         e.pexp_attributes |> M.parse |> M.map (fun _ -> ()))
 
   let test_set =

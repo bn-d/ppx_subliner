@@ -21,10 +21,15 @@ module Term : sig
     pos_all : 'a option;
     pos_left : 'a option;
     pos_right : 'a option;
-    (* list *)
+    (* as term *)
     non_empty : 'a option;
     last : 'a option;
+    (* type *)
     default : 'a option;
+    sep : 'a option;
+    list_sep : 'a option;
+    array_sep : 'a option;
+    tuple_sep : 'a option;
   }
   [@@deriving make]
 

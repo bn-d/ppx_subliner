@@ -9,5 +9,6 @@ let () =
       ("term.as-term", Test_term_as_term.test_set);
       ("term.named", Test_term.Named.test_set);
       ("term.postional", Test_term.Positional.test_set);
+      ("term", Test_term.test_set);
       ("group-cmd", Test_group_cmd.test_set);
     ]

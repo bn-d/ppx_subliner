@@ -3,13 +3,11 @@ open Ppx_subliner.Term.Conv
 module Attr = Ppx_subliner.Attribute_parser.Term
 
 let loc = Location.none
-let t = Alcotest.of_pp (fun _ _ -> ())
-let expr = Alcotest.of_pp (fun _ _ -> ())
-let test = Utils.test_equal t of_core_type
+let test = Utils.test_equal Utils.pp of_core_type
 let test_raises = Utils.test_raises of_core_type
 
 let test_gen name =
-  Utils.test_equal expr (to_expr ~loc Attr.empty) ("gen." ^ name)
+  Utils.test_equal Utils.pp (to_expr ~loc Attr.empty) ("gen." ^ name)
 
 let test_set =
   [

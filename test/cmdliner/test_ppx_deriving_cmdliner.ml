@@ -237,7 +237,7 @@ let test_set =
   [ ("simple types", `Quick, simple)
   ; ("default types", `Quick, defaults)
 (*  ; ("ENV types", `Quick, env)*)
-(*  ; ("list sep types", `Quick, list_sep)*)
+  ; ("list sep types", `Quick, list_sep)
   ; ("positional types", `Quick, positional)
 (*  ; ("enum types", `Quick, enums)*)
 (*  ; ("custom types", `Quick, customs)*)
