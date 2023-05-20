@@ -24,13 +24,13 @@ module Term = struct
         [%expr t [@subliner.deprecated_]];
       test "absent" (M.make_t ~absent:() ()) [%expr t [@absent]];
       test "absent.s" (M.make_t ~absent:() ()) [%expr t [@subliner.absent]];
-      test "doc" (M.make_t ~doc:() ()) [%expr t [@doc]];
-      test "doc.s" (M.make_t ~doc:() ()) [%expr t [@subliner.doc]];
-      test "ocaml.doc" (M.make_t ~doc:() ()) [%expr t [@ocaml.doc]];
       test "docs" (M.make_t ~docs:() ()) [%expr t [@docs]];
       test "docs.s" (M.make_t ~docs:() ()) [%expr t [@subliner.docs]];
       test "docv" (M.make_t ~docv:() ()) [%expr t [@docv]];
       test "docv.s" (M.make_t ~docv:() ()) [%expr t [@subliner.docv]];
+      test "doc" (M.make_t ~doc:() ()) [%expr t [@doc]];
+      test "doc.s" (M.make_t ~doc:() ()) [%expr t [@subliner.doc]];
+      test "ocaml.doc" (M.make_t ~doc:() ()) [%expr t [@ocaml.doc]];
       test "env" (M.make_t ~env:() ()) [%expr t [@env]];
       test "env.s" (M.make_t ~env:() ()) [%expr t [@subliner.env]];
       test "names" (M.make_t ~names:() ()) [%expr t [@names]];
@@ -56,6 +56,29 @@ module Term = struct
       test "last.s" (M.make_t ~last:() ()) [%expr t [@subliner.last]];
       test "default" (M.make_t ~default:() ()) [%expr t [@default]];
       test "default.s" (M.make_t ~default:() ()) [%expr t [@subliner.default]];
+      test "sep" (M.make_t ~sep:() ()) [%expr t [@sep]];
+      test "sep.s" (M.make_t ~sep:() ()) [%expr t [@subliner.sep]];
+      test "list_sep" (M.make_t ~list_sep:() ()) [%expr t [@list_sep]];
+      test "list_sep.s" (M.make_t ~list_sep:() ())
+        [%expr t [@subliner.list_sep]];
+      test "array_sep" (M.make_t ~array_sep:() ()) [%expr t [@array_sep]];
+      test "array_sep.s"
+        (M.make_t ~array_sep:() ())
+        [%expr t [@subliner.array_sep]];
+      test "tuple_sep" (M.make_t ~tuple_sep:() ()) [%expr t [@tuple_sep]];
+      test "tuple_sep.s"
+        (M.make_t ~tuple_sep:() ())
+        [%expr t [@subliner.tuple_sep]];
+      test "file" (M.make_t ~file:() ()) [%expr t [@file]];
+      test "file.s" (M.make_t ~file:() ()) [%expr t [@subliner.file]];
+      test "dir" (M.make_t ~dir:() ()) [%expr t [@dir]];
+      test "dir.s" (M.make_t ~dir:() ()) [%expr t [@subliner.dir]];
+      test "non_dir_file"
+        (M.make_t ~non_dir_file:() ())
+        [%expr t [@non_dir_file]];
+      test "non_dir_file.s"
+        (M.make_t ~non_dir_file:() ())
+        [%expr t [@subliner.non_dir_file]];
     ]
 end
 

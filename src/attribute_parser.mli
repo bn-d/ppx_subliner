@@ -30,6 +30,9 @@ module Term : sig
     list_sep : 'a option;
     array_sep : 'a option;
     tuple_sep : 'a option;
+    file : 'a option;
+    dir : 'a option;
+    non_dir_file : 'a option;
   }
   [@@deriving make]
 

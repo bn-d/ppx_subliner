@@ -114,8 +114,11 @@ module Term = struct
     list_sep : 'a option;
     array_sep : 'a option;
     tuple_sep : 'a option;
+    file : 'a option;
+    dir : 'a option;
+    non_dir_file : 'a option;
         (* TODO: enhance env *)
-        (* TODO: support file, dir, non_dir_file, rev *)
+        (* TODO: support rev *)
   }
   [@@deriving make]
 
@@ -143,6 +146,9 @@ module Term = struct
         list_sep;
         array_sep;
         tuple_sep;
+        file;
+        dir;
+        non_dir_file;
       } =
     let f = Option.map f in
     {
@@ -170,6 +176,9 @@ module Term = struct
       list_sep = f list_sep;
       array_sep = f array_sep;
       tuple_sep = f tuple_sep;
+      file = f file;
+      dir = f dir;
+      non_dir_file = f non_dir_file;
     }
 
   let tag_of_string = function
@@ -192,6 +201,9 @@ module Term = struct
     | "list_sep" -> Some `list_sep
     | "array_sep" -> Some `array_sep
     | "tuple_sep" -> Some `tuple_sep
+    | "file" -> Some `file
+    | "dir" -> Some `dir
+    | "non_dir_file" -> Some `non_dir_file
     | _ -> None
 
   let update_field_of_tag tag v t =
@@ -215,6 +227,9 @@ module Term = struct
     | `list_sep -> { t with list_sep = Level.join t.list_sep v }
     | `array_sep -> { t with array_sep = Level.join t.array_sep v }
     | `tuple_sep -> { t with tuple_sep = Level.join t.tuple_sep v }
+    | `file -> { t with file = Level.join t.file v }
+    | `dir -> { t with dir = Level.join t.dir v }
+    | `non_dir_file -> { t with non_dir_file = Level.join t.non_dir_file v }
 
   let parse attrs =
     parse_impl ~empty ~map ~tag_of_string ~update_field_of_tag attrs
