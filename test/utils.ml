@@ -1,6 +1,7 @@
 open Ppxlib
 
 let diff_msg = "actual is different from expected"
+let pp _ _ = ()
 
 let testf f name check input =
   let test () =
@@ -10,7 +11,8 @@ let testf f name check input =
 
   Alcotest.test_case name `Quick test
 
-let test_equal t f name expected input =
+let test_equal pp f name expected input =
+  let t = Alcotest.of_pp pp in
   let test () =
     let actual = f input in
     Alcotest.(check t) diff_msg expected actual

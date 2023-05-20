@@ -3,8 +3,7 @@ open Ppx_subliner.Term.As_term
 module Attr = Ppx_subliner.Attribute_parser.Term
 
 let loc = Location.none
-let t = Alcotest.of_pp (fun _ _ -> ())
-let test = Utils.test_equal t (of_attrs ~loc)
+let test = Utils.test_equal Utils.pp (of_attrs ~loc)
 let test_raises = Utils.test_raises (of_attrs ~loc)
 
 let test_set =

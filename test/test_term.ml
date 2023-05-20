@@ -10,8 +10,8 @@ let loc = Location.none
 module Info = struct
   module M = Ppx_subliner.Term.Info
 
-  let t = Alcotest.of_pp (fun _ _ -> ())
-  let test_gen = Utils.test_equal t (M.expr_of_attrs ~loc [%expr [ "NAME" ]])
+  let test_gen =
+    Utils.test_equal Utils.pp (M.expr_of_attrs ~loc [%expr [ "NAME" ]])
 
   let test_set =
     let u = (loc, [%str ()]) in
@@ -25,7 +25,7 @@ module Info = struct
     ]
 end
 
-let test check term prefix name expected argv =
+let test prefix check term name expected argv =
   let f () =
     let cmd =
       let info = Cmd.info "cmd" in
@@ -35,24 +35,25 @@ let test check term prefix name expected argv =
   in
   Alcotest.test_case (prefix ^ "." ^ name) `Quick f
 
-let test_equal term t prefix name expected argv =
-  test
+let test_equal prefix term name expected argv =
+  let t = Alcotest.of_pp Utils.pp in
+  test prefix
     (fun expected result ->
       match result with
       | Ok (`Ok actual) -> Alcotest.check t Utils.diff_msg expected actual
       | Ok _ -> Alcotest.fail "unexpected eva_ok result"
       | Error e ->
           Alcotest.failf "eval error: %s" @@ Utils.eval_error_to_string e)
-    term prefix name expected argv
+    term name expected argv
 
-let test_error term prefix name expected argv =
-  test
+let test_error prefix term name expected argv =
+  test prefix
     (fun expected actual ->
       match actual with
       | Error actual ->
           Alcotest.check Utils.eval_error Utils.diff_msg expected actual
       | Ok _ -> Alcotest.fail "test expected to fail")
-    term prefix name expected argv
+    term name expected argv
 
 module Named = struct
   type simple = {
@@ -64,11 +65,8 @@ module Named = struct
     non_empty : int64 list; [@non_empty]
     last : char; [@last]
     last_default : nativeint; [@last] [@default Nativeint.of_int 42]
-    names : int; [@names [ "new_name"; "n" ]]
   }
   [@@deriving subliner]
-
-  let simple = Alcotest.testable (fun _ _ -> ()) ( = )
 
   type opt_all = {
     required : bool list; [@opt_all]
@@ -79,13 +77,11 @@ module Named = struct
   }
   [@@deriving subliner]
 
-  let opt_all = Alcotest.testable (fun _ _ -> ()) ( = )
-
   let test_set =
-    let test_simple = test_equal simple_cmdliner_term simple "simple"
-    and test_simple_error = test_error simple_cmdliner_term "simple"
-    and test_opt_all = test_equal opt_all_cmdliner_term opt_all "opt_all"
-    and test_opt_all_error = test_error opt_all_cmdliner_term "opt_all" in
+    let test_simple = test_equal "simple" simple_cmdliner_term
+    and test_simple_error = test_error "simple" simple_cmdliner_term
+    and test_opt_all = test_equal "opt_all" opt_all_cmdliner_term
+    and test_opt_all_error = test_error "opt_all" opt_all_cmdliner_term in
     [
       test_simple "simple"
         {
@@ -97,7 +93,6 @@ module Named = struct
           non_empty = [ Int64.of_int 22; Int64.of_int 23 ];
           last = 'c';
           last_default = Nativeint.of_int 3;
-          names = 1;
         }
         [|
           "cmd";
@@ -109,7 +104,6 @@ module Named = struct
           "--non-empty=22,23";
           "--last=a,b,c";
           "--last-default=1,2,3";
-          "--new_name=1";
         |];
       test_simple "default"
         {
@@ -121,15 +115,14 @@ module Named = struct
           non_empty = [ Int64.of_int 22 ];
           last = 'a';
           last_default = Nativeint.of_int 42;
-          names = 1;
         }
-        [| "cmd"; "--required=21"; "--non-empty=22"; "--last=a"; "-n"; "1" |];
+        [| "cmd"; "--required=21"; "--non-empty=22"; "--last=a" |];
       test_simple_error "required" `Parse
-        [| "cmd"; "--non-empty=22"; "--last=a,b,c"; "-n=1" |];
+        [| "cmd"; "--non-empty=22"; "--last=a,b,c" |];
       test_simple_error "non-empty" `Parse
-        [| "cmd"; "--required=21"; "--last=a,b,c"; "-n=1" |];
+        [| "cmd"; "--required=21"; "--last=a,b,c" |];
       test_simple_error "last" `Parse
-        [| "cmd"; "--required=21"; "--non-empty=22"; "-n=1" |];
+        [| "cmd"; "--required=21"; "--non-empty=22" |];
       test_opt_all "simple"
         {
           required = [ true; false ];
@@ -176,28 +169,20 @@ module Positional = struct
   }
   [@@deriving subliner]
 
-  let simple = Alcotest.testable (fun _ _ -> ()) ( = )
-
   type left = { last : int [@pos_left 2] [@last] } [@@deriving subliner]
-
-  let left = Alcotest.testable (fun _ _ -> ()) ( = )
 
   type right = { non_empty : int list [@pos_right 0] [@non_empty] }
   [@@deriving subliner]
 
-  let right = Alcotest.testable (fun _ _ -> ()) ( = )
-
   type all = { nested : int list list [@pos_all] } [@@deriving subliner]
 
-  let all = Alcotest.testable (fun _ _ -> ()) ( = )
-
   let test_set =
-    let test_simple = test_equal simple_cmdliner_term simple "simple"
-    and test_simple_error = test_error simple_cmdliner_term "simple"
-    and test_left = test_equal left_cmdliner_term left "list_pos"
-    and test_right = test_equal right_cmdliner_term right "list_pos"
-    and test_right_error = test_error right_cmdliner_term "list_pos"
-    and test_all = test_equal all_cmdliner_term all "list_pos" in
+    let test_simple = test_equal "simple" simple_cmdliner_term
+    and test_simple_error = test_error "simple" simple_cmdliner_term
+    and test_left = test_equal "list_pos" left_cmdliner_term
+    and test_right = test_equal "list_pos" right_cmdliner_term
+    and test_right_error = test_error "list_pos" right_cmdliner_term
+    and test_all = test_equal "list_pos" all_cmdliner_term in
     [
       test_simple "simple"
         {
@@ -235,3 +220,38 @@ module Positional = struct
       test_all "empty" { nested = [] } [| "cmd" |];
     ]
 end
+
+type names = { names : int [@names [ "new_name"; "n" ]] } [@@deriving subliner]
+
+type sep = {
+  sep : int list; [@sep '@']
+  list : int list; [@list_sep '#'] [@sep '@']
+  array : int array; [@array_sep '#'] [@sep '@']
+  tuple : int * int; [@tuple_sep '#'] [@sep '@']
+  nested : (int * int * int) list; [@tuple_sep ','] [@sep ';']
+}
+[@@deriving subliner]
+
+let test_set =
+  let test_names = test_equal "names" names_cmdliner_term
+  and test_sep = test_equal "sep" sep_cmdliner_term in
+  [
+    test_names "long" { names = 1 } [| "cmd"; "--new_name"; "1" |];
+    test_names "short" { names = 1 } [| "cmd"; "-n"; "1" |];
+    test_sep "simple"
+      {
+        sep = [ 1; 2 ];
+        list = [ 3; 4 ];
+        array = [| 5; 6 |];
+        tuple = (7, 8);
+        nested = [ (0, 0, 0); (255, 255, 255) ];
+      }
+      [|
+        "cmd";
+        "--sep=1@2";
+        "--list=3#4";
+        "--array=5#6";
+        "--tuple=7#8";
+        "--nested=0,0,0;255,255,255";
+      |];
+  ]

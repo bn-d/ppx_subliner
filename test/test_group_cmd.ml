@@ -13,9 +13,8 @@ type simple =
   | Simple_no_arg
 [@@deriving subliner]
 
-let t = Alcotest.of_pp (fun _ _ -> ())
-
 let test name expected argv =
+  let t = Alcotest.of_pp (fun _ _ -> ()) in
   let f () =
     let cmd =
       let info = Cmdliner.Cmd.info "cmd" in
