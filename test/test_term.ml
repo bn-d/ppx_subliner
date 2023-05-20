@@ -225,10 +225,10 @@ type names = { names : int [@names [ "new_name"; "n" ]] } [@@deriving subliner]
 
 type sep = {
   sep : int list; [@sep '@']
-  list : int list; [@list_sep '#'] [@sep '@']
-  array : int array; [@array_sep '#'] [@sep '@']
-  tuple : int * int; [@tuple_sep '#'] [@sep '@']
-  nested : (int * int * int) list; [@tuple_sep ','] [@sep ';']
+  list : int list; [@sep '#']
+  array : int array; [@sep '#']
+  tuple : int * int; [@sep '#']
+  nested : ((int * int * int)[@sep '#']) list; [@sep ';']
 }
 [@@deriving subliner]
 
@@ -252,6 +252,6 @@ let test_set =
         "--list=3#4";
         "--array=5#6";
         "--tuple=7#8";
-        "--nested=0,0,0;255,255,255";
+        "--nested=0#0#0;255#255#255";
       |];
   ]

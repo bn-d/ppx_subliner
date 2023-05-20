@@ -24,11 +24,11 @@ module Conv = struct
     | Dir
     | Non_dir_file
     | Option of t
-    | List of t
-    | Array of t
-    | Pair of t * t
-    | T3 of t * t * t
-    | T4 of t * t * t * t
+    | List of expression option * t
+    | Array of expression option * t
+    | Pair of expression option * (t * t)
+    | T3 of expression option * (t * t * t)
+    | T4 of expression option * (t * t * t * t)
 
   let rec of_core_type : core_type -> t = function
     | [%type: bool] | [%type: Bool.t] -> Bool
@@ -42,28 +42,21 @@ module Conv = struct
     | [%type: [%t? ct] option] | [%type: [%t? ct] Option.t] ->
         Option (of_core_type ct)
     | [%type: [%t? ct] list] | [%type: [%t? ct] List.t] ->
-        List (of_core_type ct)
+        List (None, of_core_type ct)
     | [%type: [%t? ct] array] | [%type: [%t? ct] Array.t] ->
-        Array (of_core_type ct)
-    | [%type: [%t? t0] * [%t? t1]] -> Pair (of_core_type t0, of_core_type t1)
+        Array (None, of_core_type ct)
+    | [%type: [%t? t0] * [%t? t1]] ->
+        Pair (None, (of_core_type t0, of_core_type t1))
     | [%type: [%t? t0] * [%t? t1] * [%t? t2]] ->
-        T3 (of_core_type t0, of_core_type t1, of_core_type t2)
+        T3 (None, (of_core_type t0, of_core_type t1, of_core_type t2))
     | [%type: [%t? t0] * [%t? t1] * [%t? t2] * [%t? t3]] ->
-        T4 (of_core_type t0, of_core_type t1, of_core_type t2, of_core_type t3)
+        T4
+          ( None,
+            (of_core_type t0, of_core_type t1, of_core_type t2, of_core_type t3)
+          )
     | { ptyp_loc = loc; _ } -> Error.field_type ~loc
 
-  let to_expr ~loc (attrs : attrs) t : expression =
-    let sep_expr = attrs.sep |> Attribute_parser.to_expr_opt in
-    let get_sep_expr attr =
-      attr
-      |> Attribute_parser.to_expr_opt
-      |> Option.fold ~none:sep_expr ~some:Option.some
-      |> Option.fold ~none:[%expr None] ~some:(fun e -> [%expr Some [%e e]])
-    in
-
-    let list_sep_expr = get_sep_expr attrs.list_sep
-    and array_sep_expr = get_sep_expr attrs.array_sep
-    and tuple_sep_expr = get_sep_expr attrs.tuple_sep in
+  let to_expr ~loc t : expression =
     let rec impl ~loc = function
       | Bool -> [%expr bool]
       | Char -> [%expr char]
@@ -79,28 +72,48 @@ module Conv = struct
       | Option t ->
           let expr = impl ~loc t in
           [%expr some [%e expr]]
-      | List t ->
-          let expr = impl ~loc t in
-          [%expr list ?sep:[%e list_sep_expr] [%e expr]]
-      | Array t ->
-          let expr = impl ~loc t in
-          [%expr array ?sep:[%e array_sep_expr] [%e expr]]
-      | Pair (t0, t1) ->
-          let t0_expr = impl ~loc t0 and t1_expr = impl ~loc t1 in
-          [%expr pair ?sep:[%e tuple_sep_expr] [%e t0_expr] [%e t1_expr]]
-      | T3 (t0, t1, t2) ->
-          let t0_expr = impl ~loc t0
+      | List (sep, t) ->
+          let sep_expr =
+            Option.fold ~none:[%expr None]
+              ~some:(fun e -> [%expr Some [%e e]])
+              sep
+          and expr = impl ~loc t in
+          [%expr list ?sep:[%e sep_expr] [%e expr]]
+      | Array (sep, t) ->
+          let sep_expr =
+            Option.fold ~none:[%expr None]
+              ~some:(fun e -> [%expr Some [%e e]])
+              sep
+          and expr = impl ~loc t in
+          [%expr array ?sep:[%e sep_expr] [%e expr]]
+      | Pair (sep, (t0, t1)) ->
+          let sep_expr =
+            Option.fold ~none:[%expr None]
+              ~some:(fun e -> [%expr Some [%e e]])
+              sep
+          and t0_expr = impl ~loc t0
+          and t1_expr = impl ~loc t1 in
+          [%expr pair ?sep:[%e sep_expr] [%e t0_expr] [%e t1_expr]]
+      | T3 (sep, (t0, t1, t2)) ->
+          let sep_expr =
+            Option.fold ~none:[%expr None]
+              ~some:(fun e -> [%expr Some [%e e]])
+              sep
+          and t0_expr = impl ~loc t0
           and t1_expr = impl ~loc t1
           and t2_expr = impl ~loc t2 in
-          [%expr
-            t3 ?sep:[%e tuple_sep_expr] [%e t0_expr] [%e t1_expr] [%e t2_expr]]
-      | T4 (t0, t1, t2, t3) ->
-          let t0_expr = impl ~loc t0
+          [%expr t3 ?sep:[%e sep_expr] [%e t0_expr] [%e t1_expr] [%e t2_expr]]
+      | T4 (sep, (t0, t1, t2, t3)) ->
+          let sep_expr =
+            Option.fold ~none:[%expr None]
+              ~some:(fun e -> [%expr Some [%e e]])
+              sep
+          and t0_expr = impl ~loc t0
           and t1_expr = impl ~loc t1
           and t2_expr = impl ~loc t2
           and t3_expr = impl ~loc t3 in
           [%expr
-            t4 ?sep:[%e tuple_sep_expr] [%e t0_expr] [%e t1_expr] [%e t2_expr]
+            t4 ?sep:[%e sep_expr] [%e t0_expr] [%e t1_expr] [%e t2_expr]
               [%e t3_expr]]
     in
 
@@ -162,14 +175,14 @@ module As_term = struct
 end
 
 module Named = struct
-  let to_named_fun_expr ~loc attrs = function
+  let to_named_fun_expr ~loc = function
     | `flag -> [%expr Cmdliner.Arg.flag]
     | `flag_all -> [%expr Cmdliner.Arg.flag_all]
     | `opt (conv, default_expr) ->
-        let conv_expr = Conv.to_expr ~loc attrs conv in
+        let conv_expr = Conv.to_expr ~loc conv in
         [%expr Cmdliner.Arg.opt [%e conv_expr] [%e default_expr]]
     | `opt_all (conv, default_expr) ->
-        let conv_expr = Conv.to_expr ~loc attrs conv in
+        let conv_expr = Conv.to_expr ~loc conv in
         [%expr Cmdliner.Arg.opt_all [%e conv_expr] [%e default_expr]]
 
   let expr_of_attrs ~loc name ct (attrs : attrs) : expression =
@@ -190,14 +203,15 @@ module Named = struct
                 ~some:(fun expr -> [%expr [ [%e expr] ]])
                 default
             in
-            (`last (), `opt (Conv.List conv, default_expr))
+            (* TODO: read sep for last *)
+            (`last (), `opt (Conv.List (None, conv), default_expr))
         | `non_empty, _ -> Error.attr_list_type ~loc "non_empty"
       else
         match (as_term, conv) with
-        | `value default, List in_conv ->
+        | `value default, List (None, in_conv) ->
             let default_expr = Option.value ~default:[%expr []] default in
             (`value (), `opt_all (in_conv, default_expr))
-        | `non_empty, List in_conv ->
+        | `non_empty, List (None, in_conv) ->
             (`non_empty, `opt_all (in_conv, [%expr []]))
         | `last default, _ ->
             let default_expr =
@@ -206,6 +220,9 @@ module Named = struct
                 default
             in
             (`last (), `opt_all (conv, default_expr))
+        | _, List (Some _, _) ->
+            Location.raise_errorf ~loc
+              "`opt_all` and `sep` cannot be used on the same list"
         | _ -> Error.attr_list_type ~loc "opt_all"
     and names_expr =
       (* field name will be the default arg name *)
@@ -223,7 +240,7 @@ module Named = struct
     in
 
     let as_term_expr = As_term.to_expr ~loc as_term
-    and named_fun_expr = to_named_fun_expr ~loc attrs type_
+    and named_fun_expr = to_named_fun_expr ~loc type_
     and info_expr = Info.expr_of_attrs ~loc names_expr attrs in
 
     [%expr [%e as_term_expr] ([%e named_fun_expr] [%e info_expr])]
@@ -290,14 +307,15 @@ module Positional = struct
                   ~some:(fun expr -> [%expr [ [%e expr] ]])
                   default
               in
-              (`last (), List conv, default_expr)
+              (* TODO: read sep for last *)
+              (`last (), List (None, conv), default_expr)
           | `non_empty, _ -> Error.attr_list_type ~loc "non_empty")
       | `pos_left _ | `pos_right _ | `pos_all -> (
           match (as_term, conv) with
-          | `value default, List in_conv ->
+          | `value default, List (None, in_conv) ->
               let default_expr = Option.value ~default:[%expr []] default in
               (`value (), in_conv, default_expr)
-          | `non_empty, List in_conv -> (`non_empty, in_conv, [%expr []])
+          | `non_empty, List (None, in_conv) -> (`non_empty, in_conv, [%expr []])
           | `last default, _ ->
               let default_expr =
                 Option.fold ~none:[%expr []]
@@ -305,6 +323,10 @@ module Positional = struct
                   default
               in
               (`last (), conv, default_expr)
+          | _, List (Some _, _) ->
+              Location.raise_errorf ~loc
+                "`names` cannot be used with `pos_left`, `pos_right` and \
+                 `pos_all`"
           | _ ->
               Location.raise_errorf ~loc
                 "`pos_left`, `pos_right` and `pos_all` must be used with list \
@@ -313,7 +335,7 @@ module Positional = struct
 
     let as_term_expr = As_term.to_expr ~loc as_term
     and info_expr = Info.expr_of_attrs ~loc [%expr []] attrs
-    and conv_expr = Conv.to_expr ~loc attrs conv
+    and conv_expr = Conv.to_expr ~loc conv
     and pos_fun_expr = to_pos_fun_expr ~loc type_ in
 
     [%expr
