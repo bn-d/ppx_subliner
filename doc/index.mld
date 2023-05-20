@@ -163,7 +163,7 @@ type params = { foo : string list [@pos_right 1] }
 
 Enforce a list argument to be non-empty.
 
-Conflict with {!attr_arg_default}, {!attr_last}.
+Conflict with {!attr_term_default}, {!attr_last}.
 
 {[
 type params = { foo : string list [@non_empty] }
@@ -181,7 +181,7 @@ Conflict with {!attr_non_empty}.
 type params = { foo : string [@last] [@last.sep ';'] }
 ]}
 
-{3:attr_arg_default [[@default value]]}
+{3:attr_term_default [[@default t]]}
 
 Set the default value of the argument.
 
