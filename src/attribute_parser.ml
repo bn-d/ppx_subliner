@@ -111,7 +111,6 @@ module Term = struct
     last_sep : 'a option;
     (* type *)
     default : 'a option;
-        (* TODO: enhance env *)
         (* TODO: support rev *)
   }
   [@@deriving make]
