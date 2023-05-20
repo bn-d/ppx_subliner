@@ -43,11 +43,11 @@ module Conv = struct
         let file = Attribute_parser.to_bool attrs.file
         and dir = Attribute_parser.to_bool attrs.dir
         and non_dir_file = Attribute_parser.to_bool attrs.non_dir_file in
-        if file && not dir && not non_dir_file then
+        if file && not (dir || non_dir_file) then
           File
-        else if dir && not file && not non_dir_file then
+        else if dir && not (file || non_dir_file) then
           Dir
-        else if non_dir_file && not file && not dir then
+        else if non_dir_file && not (file || dir) then
           Non_dir_file
         else if not (file || dir || non_dir_file) then
           String
