@@ -161,8 +161,9 @@ end
 
 module As_term = struct
   let of_attrs ~loc (attrs : attrs) :
-      [ `value of expression option | `non_empty | `last of expression option ]
-      =
+      [ `value of expression option
+      | `non_empty
+      | `last of expression option * expression option ] =
     let non_empty = Ap.to_bool attrs.non_empty
     and last = Ap.to_bool attrs.last
     and default = Ap.to_expr_opt attrs.default in
@@ -174,7 +175,9 @@ module As_term = struct
     | true, _, Some _ ->
         Location.raise_errorf ~loc
           "`non_empty` and `default` cannot be used at the same time"
-    | false, true, _ -> `last default
+    | false, true, _ ->
+        let sep = Ap.to_expr_opt attrs.last_sep in
+        `last (sep, default)
     | false, false, _ -> `value default
 
   let to_expr ~loc :
@@ -209,12 +212,12 @@ module Named = struct
         | `value None, Option _ -> (`value (), `opt (conv, [%expr None]))
         | `value None, _ -> (`required, `opt (Conv.Option conv, [%expr None]))
         | `non_empty, List _ -> (`non_empty, `opt (conv, [%expr []]))
-        | `last default, _ ->
+        | `last (sep, default), _ ->
             let default_expr =
               Option.fold ~none:[%expr []] ~some:(Utils.elist ~loc) default
             in
             (* TODO: read sep for last *)
-            (`last (), `opt (Conv.List (None, conv), default_expr))
+            (`last (), `opt (Conv.List (sep, conv), default_expr))
         | `non_empty, _ -> Error.attr_list_type ~loc "non_empty"
       else
         match (as_term, conv) with
@@ -223,7 +226,7 @@ module Named = struct
             (`value (), `opt_all (in_conv, default_expr))
         | `non_empty, List (None, in_conv) ->
             (`non_empty, `opt_all (in_conv, [%expr []]))
-        | `last default, _ ->
+        | `last (_, default), _ ->
             let default_expr =
               Option.fold ~none:[%expr []] ~some:(Utils.elist ~loc) default
             in
@@ -305,12 +308,11 @@ module Positional = struct
           | `value None, Option _ -> (`value (), conv, [%expr None])
           | `value None, _ -> (`required, Option conv, [%expr None])
           | `non_empty, List _ -> (`non_empty, conv, [%expr []])
-          | `last default, _ ->
+          | `last (sep, default), _ ->
               let default_expr =
                 Option.fold ~none:[%expr []] ~some:(Utils.elist ~loc) default
               in
-              (* TODO: read sep for last *)
-              (`last (), List (None, conv), default_expr)
+              (`last (), List (sep, conv), default_expr)
           | `non_empty, _ -> Error.attr_list_type ~loc "non_empty")
       | `pos_left _ | `pos_right _ | `pos_all -> (
           match (as_term, conv) with
@@ -318,7 +320,7 @@ module Positional = struct
               let default_expr = Option.value ~default:[%expr []] default in
               (`value (), in_conv, default_expr)
           | `non_empty, List (None, in_conv) -> (`non_empty, in_conv, [%expr []])
-          | `last default, _ ->
+          | `last (_, default), _ ->
               let default_expr =
                 Option.fold ~none:[%expr []] ~some:(Utils.elist ~loc) default
               in

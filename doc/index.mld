@@ -178,7 +178,7 @@ Only evaluates the last element of the list.
 Conflict with {!attr_non_empty}.
 
 {[
-type params = { foo : string [@last] [@sep ';'] }
+type params = { foo : string [@last] [@last.sep ';'] }
 ]}
 
 {3:attr_arg_default [[@default value]]}

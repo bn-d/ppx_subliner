@@ -55,6 +55,9 @@ module Term = struct
         [%expr t [@subliner.non_empty]];
       test "last" (M.make_t ~last:() ()) [%expr t [@last]];
       test "last.s" (M.make_t ~last:() ()) [%expr t [@subliner.last]];
+      test "last.sep" (M.make_t ~last_sep:() ()) [%expr t [@last.sep]];
+      test "last.sep.s" (M.make_t ~last_sep:() ())
+        [%expr t [@subliner.last.sep]];
       test "default" (M.make_t ~default:() ()) [%expr t [@default]];
       test "default.s" (M.make_t ~default:() ()) [%expr t [@subliner.default]];
     ]

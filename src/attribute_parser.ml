@@ -105,6 +105,7 @@ module Term = struct
     (* as term *)
     non_empty : 'a option;
     last : 'a option;
+    last_sep : 'a option;
     (* type *)
     default : 'a option;
         (* TODO: enhance env *)
@@ -131,6 +132,7 @@ module Term = struct
         pos_right;
         non_empty;
         last;
+        last_sep;
         default;
       } =
     let f = Option.map f in
@@ -153,6 +155,7 @@ module Term = struct
       (* as term *)
       non_empty = f non_empty;
       last = f last;
+      last_sep = f last_sep;
       (* type *)
       default = f default;
     }
@@ -172,6 +175,7 @@ module Term = struct
     | "pos_right" -> Some `pos_right
     | "non_empty" -> Some `non_empty
     | "last" -> Some `last
+    | "last.sep" -> Some `last_sep
     | "default" -> Some `default
     | _ -> None
 
@@ -191,6 +195,7 @@ module Term = struct
     | `pos_right -> { t with pos_right = Level.join t.pos_right v }
     | `non_empty -> { t with non_empty = Level.join t.non_empty v }
     | `last -> { t with last = Level.join t.last v }
+    | `last_sep -> { t with last_sep = Level.join t.last_sep v }
     | `default -> { t with default = Level.join t.default v }
 
   let parse attrs =
