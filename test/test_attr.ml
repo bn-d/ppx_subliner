@@ -69,16 +69,6 @@ module Term = struct
       test "tuple_sep.s"
         (M.make_t ~tuple_sep:() ())
         [%expr t [@subliner.tuple_sep]];
-      test "file" (M.make_t ~file:() ()) [%expr t [@file]];
-      test "file.s" (M.make_t ~file:() ()) [%expr t [@subliner.file]];
-      test "dir" (M.make_t ~dir:() ()) [%expr t [@dir]];
-      test "dir.s" (M.make_t ~dir:() ()) [%expr t [@subliner.dir]];
-      test "non_dir_file"
-        (M.make_t ~non_dir_file:() ())
-        [%expr t [@non_dir_file]];
-      test "non_dir_file.s"
-        (M.make_t ~non_dir_file:() ())
-        [%expr t [@subliner.non_dir_file]];
     ]
 end
 
@@ -111,6 +101,28 @@ module Common = struct
         [%expr t [@doc: int]];
       test_raises "invalid_attr" ~exn:"unexpected attribute name: irrelevant"
         [%expr t [@subliner.irrelevant]];
+    ]
+end
+
+module String_conv = struct
+  module M = Ppx_subliner.Attribute_parser.String_conv
+
+  let test =
+    Utils.test_equal Utils.pp (fun e ->
+        e.pexp_attributes |> M.parse |> M.map (fun _ -> ()))
+
+  let test_set =
+    [
+      test "file" (M.make_t ~file:() ()) [%expr t [@file]];
+      test "file.s" (M.make_t ~file:() ()) [%expr t [@subliner.file]];
+      test "dir" (M.make_t ~dir:() ()) [%expr t [@dir]];
+      test "dir.s" (M.make_t ~dir:() ()) [%expr t [@subliner.dir]];
+      test "non_dir_file"
+        (M.make_t ~non_dir_file:() ())
+        [%expr t [@non_dir_file]];
+      test "non_dir_file.s"
+        (M.make_t ~non_dir_file:() ())
+        [%expr t [@subliner.non_dir_file]];
     ]
 end
 
