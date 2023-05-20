@@ -57,19 +57,6 @@ module Term = struct
       test "last.s" (M.make_t ~last:() ()) [%expr t [@subliner.last]];
       test "default" (M.make_t ~default:() ()) [%expr t [@default]];
       test "default.s" (M.make_t ~default:() ()) [%expr t [@subliner.default]];
-      test "sep" (M.make_t ~sep:() ()) [%expr t [@sep]];
-      test "sep.s" (M.make_t ~sep:() ()) [%expr t [@subliner.sep]];
-      test "list_sep" (M.make_t ~list_sep:() ()) [%expr t [@list_sep]];
-      test "list_sep.s" (M.make_t ~list_sep:() ())
-        [%expr t [@subliner.list_sep]];
-      test "array_sep" (M.make_t ~array_sep:() ()) [%expr t [@array_sep]];
-      test "array_sep.s"
-        (M.make_t ~array_sep:() ())
-        [%expr t [@subliner.array_sep]];
-      test "tuple_sep" (M.make_t ~tuple_sep:() ()) [%expr t [@tuple_sep]];
-      test "tuple_sep.s"
-        (M.make_t ~tuple_sep:() ())
-        [%expr t [@subliner.tuple_sep]];
     ]
 end
 

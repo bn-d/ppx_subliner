@@ -26,10 +26,6 @@ module Term : sig
     last : 'a option;
     (* type *)
     default : 'a option;
-    sep : 'a option;
-    list_sep : 'a option;
-    array_sep : 'a option;
-    tuple_sep : 'a option;
   }
   [@@deriving make]
 
