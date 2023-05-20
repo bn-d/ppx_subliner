@@ -76,6 +76,7 @@ let handle_params_term_expr_of_const_decl
             | _ -> Location.raise_errorf "constructor argument is not supported"
           in
           (handle_expr, [%expr [%e param_term_fun_expr] ()])
+      (* TODO: support multi arg and inline record *)
       | Pcstr_tuple _ ->
           Location.raise_errorf "constructor cannot have more than 1 arguments"
       | Pcstr_record _ ->

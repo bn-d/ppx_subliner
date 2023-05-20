@@ -17,9 +17,13 @@ let test_set =
     test "non_empty" `non_empty (Ap.make_t ~non_empty:s ());
     test_raises "non_empty.invalid" ~exn:"flag cannot have any payload"
       (Ap.make_t ~non_empty:u ());
-    test "last" (`last None) (Ap.make_t ~last:s ());
-    test "last.default" (`last (Some unit_expr))
+    test "last" (`last (None, None)) (Ap.make_t ~last:s ());
+    test "last.default"
+      (`last (None, Some unit_expr))
       (Ap.make_t ~last:s ~default:u ());
+    test "last.sep"
+      (`last (Some unit_expr, None))
+      (Ap.make_t ~last:s ~last_sep:u ());
     test_raises "last.invalid" ~exn:"flag cannot have any payload"
       (Ap.make_t ~last:u ());
     test_raises "non_empty_last_conflict"

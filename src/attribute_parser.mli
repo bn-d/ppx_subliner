@@ -27,6 +27,7 @@ module Term : sig
     (* as term *)
     non_empty : 'a option;
     last : 'a option;
+    last_sep : 'a option;
     (* type *)
     default : 'a option;
   }

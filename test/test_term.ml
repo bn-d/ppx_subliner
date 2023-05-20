@@ -233,6 +233,7 @@ type sep = {
   array : (int array[@sep '@']);
   tuple : (int * int[@sep '@']);
   nested : (((int * int * int)[@sep '#']) list[@sep ';']);
+  last_sep : int; [@last] [@last.sep '@']
 }
 [@@deriving subliner]
 
@@ -249,6 +250,7 @@ let test_set =
         array = [| 5; 6 |];
         tuple = (7, 8);
         nested = [ (0, 0, 0); (255, 255, 255) ];
+        last_sep = 10;
       }
       [|
         "cmd";
@@ -257,5 +259,6 @@ let test_set =
         "--array=5@6";
         "--tuple=7@8";
         "--nested=0#0#0;255#255#255";
+        "--last-sep=9@10";
       |];
   ]
