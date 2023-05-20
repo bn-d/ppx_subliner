@@ -97,7 +97,7 @@ let defaults () =
   cmd_test_case "expected defaults to work"
     ~term:(default_types_cmdliner_term ())
     ~argv ~expected ~pprinter:pp_default_types
-(*
+
 type env_types = {a1: string [@env "A_ONE_ENV"]} [@@deriving subliner, show]
 
 let env () =
@@ -107,7 +107,7 @@ let env () =
   cmd_test_case "expected env variables to work"
     ~term:(env_types_cmdliner_term ())
     ~argv ~expected ~pprinter:pp_env_types
-*)
+
 type list_sep_types = {a1: (int list [@sep '@']); b1: (string array [@sep '*'])}
 [@@deriving subliner, show]
 
@@ -236,7 +236,7 @@ let miscs () =
 let test_set =
   [ ("simple types", `Quick, simple)
   ; ("default types", `Quick, defaults)
-(*  ; ("ENV types", `Quick, env)*)
+  ; ("ENV types", `Quick, env)
   ; ("list sep types", `Quick, list_sep)
   ; ("positional types", `Quick, positional)
 (*  ; ("enum types", `Quick, enums)*)
