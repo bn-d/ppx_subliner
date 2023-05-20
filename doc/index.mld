@@ -183,7 +183,7 @@ type params = { foo : string [@last] [@sep ';'] }
 
 {3:attr_arg_default [[@default value]]}
 
-Set the argument to be optional.
+Set the default value of the argument.
 
 Conflict with {!attr_non_empty}.
 
@@ -191,10 +191,23 @@ Conflict with {!attr_non_empty}.
 type params = { foo : string [@default "My default string"] }
 ]}
 
+{3 [[@env string]]}
+
+Set the the name of an environment variable which is looked up for defining the
+argument if it is absent.
+
+[[@env.deprecated string]], [[@env.docs string]] and [[@env.doc string]] can be
+used with this attribute. For their exact usages, please refer to the
+documentation of {{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Cmd/Env/index.html#val-info}Cmdliner.Cmd.Env.info}.
+
+{[
+type params = { foo : string [@env "MY_ENV_VAR"] }
+]}
+
 {3 Other}
 
 [[@deprecated string]], [[@absent string]], [[@docs string]] and [[@docv string]]
-are also supported. For their exact usage, please refer to the documentation of
+are also supported. For their exact usages, please refer to the documentation of
 {{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Arg/index.html#val-info}Cmdliner.Arg.info}.
 
 
@@ -224,7 +237,7 @@ type params = Foo (** This is a short description of My_cmd. *)
 
 [[@version string]], [[@deprecated string]], [[@docs string]], [[@sdocs string]],
 [[@exits Exit.info list]], [[@envs Env.info list]], [[@man Manpage.block list]]
-and [[@man_xrefs Manpage.xref list]] are also supported. For their exact usage,
+and [[@man_xrefs Manpage.xref list]] are also supported. For their exact usages,
 please refer to the documentation of {{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Cmd/index.html#val-info}Cmdliner.Cmd.info}.
 
 
