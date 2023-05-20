@@ -26,10 +26,6 @@ module Term : sig
     last : 'a option;
     (* type *)
     default : 'a option;
-    sep : 'a option;
-    list_sep : 'a option;
-    array_sep : 'a option;
-    tuple_sep : 'a option;
   }
   [@@deriving make]
 
@@ -48,6 +44,11 @@ module String_conv : sig
   val map : ('a -> 'b) -> 'a t -> 'b t
 
   val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) t
+  (** parse attribute list to a static type *)
+end
+
+module Sep_conv : sig
+  val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) option
   (** parse attribute list to a static type *)
 end
 
@@ -74,5 +75,6 @@ module Cmd_info : sig
 end
 
 module Default_term : sig
-  val get : Ppxlib.attributes -> Ppxlib.expression option
+  val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) option
+  (** parse attribute list to a static type *)
 end

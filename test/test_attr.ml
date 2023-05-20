@@ -1,9 +1,10 @@
 open Ppxlib
+module Ap = Ppx_subliner.Attribute_parser
 
 let loc = Location.none
 
 module Term = struct
-  module M = Ppx_subliner.Attribute_parser.Term
+  module M = Ap.Term
 
   let test =
     Utils.test_equal Utils.pp (fun e ->
@@ -56,19 +57,6 @@ module Term = struct
       test "last.s" (M.make_t ~last:() ()) [%expr t [@subliner.last]];
       test "default" (M.make_t ~default:() ()) [%expr t [@default]];
       test "default.s" (M.make_t ~default:() ()) [%expr t [@subliner.default]];
-      test "sep" (M.make_t ~sep:() ()) [%expr t [@sep]];
-      test "sep.s" (M.make_t ~sep:() ()) [%expr t [@subliner.sep]];
-      test "list_sep" (M.make_t ~list_sep:() ()) [%expr t [@list_sep]];
-      test "list_sep.s" (M.make_t ~list_sep:() ())
-        [%expr t [@subliner.list_sep]];
-      test "array_sep" (M.make_t ~array_sep:() ()) [%expr t [@array_sep]];
-      test "array_sep.s"
-        (M.make_t ~array_sep:() ())
-        [%expr t [@subliner.array_sep]];
-      test "tuple_sep" (M.make_t ~tuple_sep:() ()) [%expr t [@tuple_sep]];
-      test "tuple_sep.s"
-        (M.make_t ~tuple_sep:() ())
-        [%expr t [@subliner.tuple_sep]];
     ]
 end
 
@@ -105,7 +93,7 @@ module Common = struct
 end
 
 module String_conv = struct
-  module M = Ppx_subliner.Attribute_parser.String_conv
+  module M = Ap.String_conv
 
   let test =
     Utils.test_equal Utils.pp (fun e ->
@@ -127,7 +115,7 @@ module String_conv = struct
 end
 
 module Cmd_info = struct
-  module M = Ppx_subliner.Attribute_parser.Cmd_info
+  module M = Ap.Cmd_info
 
   let test =
     Utils.test_equal Utils.pp (fun e ->
@@ -165,5 +153,21 @@ module Cmd_info = struct
       test "version.s" (M.make_t ~version:() ()) [%expr t [@subliner.version]];
       test "name" (M.make_t ~name:() ()) [%expr t [@name]];
       test "name.s" (M.make_t ~name:() ()) [%expr t [@subliner.name]];
+    ]
+end
+
+module Single = struct
+  let test f name =
+    Utils.test_equal Utils.pp
+      (fun e -> e.pexp_attributes |> f |> Option.map (fun _ -> ()))
+      name
+
+  let test_set =
+    [
+      test Ap.Sep_conv.parse "sep" (Some ()) [%expr t [@sep]];
+      test Ap.Sep_conv.parse "sep.s" (Some ()) [%expr t [@subliner.sep]];
+      test Ap.Default_term.parse "default" (Some ()) [%expr t [@default]];
+      test Ap.Default_term.parse "default.s" (Some ())
+        [%expr t [@subliner.default]];
     ]
 end

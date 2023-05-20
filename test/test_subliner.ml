@@ -5,6 +5,7 @@ let () =
       ("attr.term", Test_attr.Term.test_set);
       ("attr.string_conv", Test_attr.String_conv.test_set);
       ("attr.cmd_info", Test_attr.Cmd_info.test_set);
+      ("attr.single", Test_attr.Single.test_set);
       ("term.conv", Test_term_conv.test_set);
       ("term.info", Test_term.Info.test_set);
       ("term.as-term", Test_term_as_term.test_set);

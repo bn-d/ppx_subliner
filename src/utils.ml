@@ -1,11 +1,6 @@
 open Ppxlib
 
 (* compatibility *)
-let rec list_find_map f = function
-  | [] -> None
-  | x :: l -> (
-      match f x with Some _ as result -> result | None -> list_find_map f l)
-
 let string_starts_with ~prefix s =
   let open String in
   let len_s = length s and len_pre = length prefix in
@@ -41,3 +36,6 @@ let map_lid_name f { txt; loc } =
     | _ -> Location.raise_errorf ~loc "Lapply of Longident is not supported"
   in
   { txt = impl txt; loc }
+
+let esome ~loc e = [%expr Some [%e e]]
+let elist ~loc e = [%expr [ [%e e] ]]

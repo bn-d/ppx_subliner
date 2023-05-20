@@ -108,7 +108,7 @@ let env () =
     ~term:(env_types_cmdliner_term ())
     ~argv ~expected ~pprinter:pp_env_types
 *)
-type list_sep_types = {a1: int list [@sep '@']; b1: string array [@sep '*']}
+type list_sep_types = {a1: (int list [@sep '@']); b1: (string array [@sep '*'])}
 [@@deriving subliner, show]
 
 let list_sep () =

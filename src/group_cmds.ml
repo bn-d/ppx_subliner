@@ -1,4 +1,5 @@
 open Ppxlib
+module Ap = Attribute_parser
 
 let suffix = "cmdliner_group_cmds"
 
@@ -8,7 +9,7 @@ let gen_name_str = function
 
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
-type info_attrs = expression Attribute_parser.Cmd_info.t
+type info_attrs = expression Ap.Cmd_info.t
 
 module Info = struct
   let expr_of_attrs ~loc (default_name_expr : expression) (attrs : attributes) :
@@ -16,8 +17,7 @@ module Info = struct
     Ast_helper.with_default_loc loc (fun () ->
         (* get cmd info args from attributes *)
         let info_attrs =
-          Attribute_parser.Cmd_info.parse attrs
-          |> Attribute_parser.Cmd_info.map Attribute_parser.to_expr
+          Ap.Cmd_info.parse attrs |> Ap.Cmd_info.map Ap.to_expr
         in
         let name_expr =
           Option.fold ~none:default_name_expr ~some:Fun.id info_attrs.name
