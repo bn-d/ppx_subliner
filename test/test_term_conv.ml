@@ -24,6 +24,9 @@ let test_set =
     test "Float.t" Float [%type: Float.t];
     test "string" String [%type: string];
     test "String.t" String [%type: String.t];
+    test "file" File [%type: (string[@file])];
+    test "dir" Dir [%type: (string[@dir])];
+    test "non_dir_file" Non_dir_file [%type: (string[@non_dir_file])];
     test "option" (Option Int) [%type: int option];
     test "Option.t" (Option Int) [%type: int Option.t];
     test "list" (List (None, Int)) [%type: int list];
@@ -36,6 +39,7 @@ let test_set =
       (T4 (None, (Int, Float, Char, Bool)))
       [%type: int * float * char * bool];
     test "nested" (List (None, List (None, Int))) [%type: int list list];
+    test "inside_attr" (List (None, File)) [%type: (string[@file]) list];
     test_raises "invalid_1" ~exn:"unsupported field type" [%type: int seq];
     test_raises "invalid_2" ~exn:"unsupported field type" [%type: unit];
     test_gen "basic" [%expr Cmdliner.Arg.(bool)] Bool;

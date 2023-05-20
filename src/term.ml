@@ -38,7 +38,23 @@ module Conv = struct
     | [%type: int32] | [%type: Int32.t] -> Int32
     | [%type: int64] | [%type: Int64.t] -> Int64
     | [%type: float] | [%type: Float.t] -> Float
-    | [%type: string] | [%type: String.t] -> String
+    | ([%type: string] | [%type: String.t]) as ct ->
+        let attrs = Attribute_parser.String_conv.parse ct.ptyp_attributes in
+        let file = Attribute_parser.to_bool attrs.file
+        and dir = Attribute_parser.to_bool attrs.dir
+        and non_dir_file = Attribute_parser.to_bool attrs.non_dir_file in
+        if file && not (dir || non_dir_file) then
+          File
+        else if dir && not (file || non_dir_file) then
+          Dir
+        else if non_dir_file && not (file || dir) then
+          Non_dir_file
+        else if not (file || dir || non_dir_file) then
+          String
+        else
+          Location.raise_errorf ~loc:ct.ptyp_loc
+            "only one of `dir`, `file` and `non_dir_file` can be specified at \
+             the same time"
     | [%type: [%t? ct] option] | [%type: [%t? ct] Option.t] ->
         Option (of_core_type ct)
     | [%type: [%t? ct] list] | [%type: [%t? ct] List.t] ->
@@ -360,8 +376,8 @@ module T = struct
     (* multiple pos error *)
     | _ ->
         Location.raise_errorf ~loc
-          "only one of [pos|pos_all|pos_left|pos_right] can be specified at \
-           the same time"
+          "only one of `pos`, `pos_all`, `pos_left` and `pos_right` can be \
+           specified at the same time"
 end
 
 let make_fun_vb_expr_of_label_decls ~loc (lds : label_declaration list) =
