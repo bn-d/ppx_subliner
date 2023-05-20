@@ -18,10 +18,14 @@ module Info = struct
     [
       test_gen "empty" [%expr Cmdliner.Arg.info [ "NAME" ]] Attr.empty;
       test_gen "all"
-        [%expr
-          Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:() ~doc:()
-            ~env:() [ "NAME" ]]
-        (Attr.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u ());
+        (let env_expr =
+           [%expr Cmdliner.Cmd.Env.info ~deprecated:() ~docs:() ~doc:() ()]
+         in
+         [%expr
+           Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:() ~doc:()
+             ~env:[%e env_expr] [ "NAME" ]])
+        (Attr.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u
+           ~env_deprecated:u ~env_docs:u ~env_doc:u ());
     ]
 end
 

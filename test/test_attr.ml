@@ -34,6 +34,17 @@ module Term = struct
       test "ocaml.doc" (M.make_t ~doc:() ()) [%expr t [@ocaml.doc]];
       test "env" (M.make_t ~env:() ()) [%expr t [@env]];
       test "env.s" (M.make_t ~env:() ()) [%expr t [@subliner.env]];
+      test "env.deprecated"
+        (M.make_t ~env_deprecated:() ())
+        [%expr t [@env.deprecated]];
+      test "env.deprecated.s"
+        (M.make_t ~env_deprecated:() ())
+        [%expr t [@subliner.env.deprecated]];
+      test "env.docs" (M.make_t ~env_docs:() ()) [%expr t [@env.docs]];
+      test "env.docs.s" (M.make_t ~env_docs:() ())
+        [%expr t [@subliner.env.docs]];
+      test "env.doc" (M.make_t ~env_doc:() ()) [%expr t [@env.doc]];
+      test "env.doc.s" (M.make_t ~env_doc:() ()) [%expr t [@subliner.env.doc]];
       test "names" (M.make_t ~names:() ()) [%expr t [@names]];
       test "names.s" (M.make_t ~names:() ()) [%expr t [@subliner.names]];
       test "opt_all" (M.make_t ~opt_all:() ()) [%expr t [@opt_all]];

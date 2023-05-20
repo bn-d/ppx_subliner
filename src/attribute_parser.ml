@@ -94,6 +94,9 @@ module Term = struct
     docv : 'a option;
     doc : 'a option;
     env : 'a option;
+    env_deprecated : 'a option;
+    env_docs : 'a option;
+    env_doc : 'a option;
     (* named *)
     names : 'a option;
     opt_all : 'a option;
@@ -123,6 +126,9 @@ module Term = struct
         docv;
         doc;
         env;
+        env_deprecated;
+        env_docs;
+        env_doc;
         names;
         opt_all;
         pos;
@@ -141,7 +147,11 @@ module Term = struct
       docs = f docs;
       docv = f docv;
       doc = f doc;
+      (* Cmd.Env.info *)
       env = f env;
+      env_deprecated = f env_deprecated;
+      env_docs = f env_docs;
+      env_doc = f env_doc;
       (* named *)
       names = f names;
       opt_all = f opt_all;
@@ -164,6 +174,9 @@ module Term = struct
     | "docv" -> Some `docv
     | "doc" -> Some `doc
     | "env" -> Some `env
+    | "env.deprecated" -> Some `env_deprecated
+    | "env.docs" -> Some `env_docs
+    | "env.doc" -> Some `env_doc
     | "names" -> Some `names
     | "opt_all" -> Some `opt_all
     | "pos" -> Some `pos
@@ -183,6 +196,10 @@ module Term = struct
     | `docv -> { t with docv = Level.join t.docv v }
     | `doc -> { t with doc = Level.join t.doc v }
     | `env -> { t with env = Level.join t.env v }
+    | `env_deprecated ->
+        { t with env_deprecated = Level.join t.env_deprecated v }
+    | `env_docs -> { t with env_docs = Level.join t.env_docs v }
+    | `env_doc -> { t with env_doc = Level.join t.env_doc v }
     | `names -> { t with names = Level.join t.names v }
     | `opt_all -> { t with opt_all = Level.join t.opt_all v }
     | `pos -> { t with pos = Level.join t.pos v }

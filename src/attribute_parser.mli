@@ -13,6 +13,9 @@ module Term : sig
     docv : 'a option;
     doc : 'a option;
     env : 'a option;
+    env_deprecated : 'a option;
+    env_docs : 'a option;
+    env_doc : 'a option;
     (* named *)
     names : 'a option;
     opt_all : 'a option;
