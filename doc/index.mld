@@ -22,8 +22,8 @@ by tagging [[@@deriving subliner]] to a record type.
 
 For record type [params], function [params_cmdliner_term] with type
 [unit -> params Cmdliner.Term.t] will be generated. A command line argument will
-be generated for each field in the record. {!arg_attr} can be attached to fields
-or types to modify the behavior of the corresponding arguments.
+be generated for each field in the record. {!term_attr} and {!type_attr} can be
+attached to fields or types to modify the behavior of the corresponding arguments.
 
 {[
 type foo = { my_arg : string } [@@deriving_inline subliner]
@@ -115,7 +115,7 @@ All attributes may be prefixed with [subliner.] to avoid conflicts with other
 extensions.
 
 
-{2:arg_attr [Arg] Attributes}
+{2:term_attr [Term] Attributes}
 
 {3 [[@names string list]]}
 
@@ -163,7 +163,7 @@ type params = { foo : string list [@pos_right 1] }
 
 Enforce a list argument to be non-empty.
 
-Conflict with {!attr_arg_default}, {!attr_last}.
+Conflict with {!attr_term_default}, {!attr_last}.
 
 {[
 type params = { foo : string list [@non_empty] }
@@ -181,9 +181,9 @@ Conflict with {!attr_non_empty}.
 type params = { foo : string [@last] [@last.sep ';'] }
 ]}
 
-{3:attr_arg_default [[@default value]]}
+{3:attr_term_default [[@default t]]}
 
-Set the argument to be optional.
+Set the default value of the argument.
 
 Conflict with {!attr_non_empty}.
 
@@ -191,10 +191,23 @@ Conflict with {!attr_non_empty}.
 type params = { foo : string [@default "My default string"] }
 ]}
 
+{3 [[@env string]]}
+
+Set the the name of an environment variable which is looked up for defining the
+argument if it is absent.
+
+[[@env.deprecated string]], [[@env.docs string]] and [[@env.doc string]] can be
+used with this attribute. For their exact usages, please refer to the
+documentation of {{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Cmd/Env/index.html#val-info}Cmdliner.Cmd.Env.info}.
+
+{[
+type params = { foo : string [@env "MY_ENV_VAR"] }
+]}
+
 {3 Other}
 
 [[@deprecated string]], [[@absent string]], [[@docs string]] and [[@docv string]]
-are also supported. For their exact usage, please refer to the documentation of
+are also supported. For their exact usages, please refer to the documentation of
 {{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Arg/index.html#val-info}Cmdliner.Arg.info}.
 
 
@@ -224,7 +237,7 @@ type params = Foo (** This is a short description of My_cmd. *)
 
 [[@version string]], [[@deprecated string]], [[@docs string]], [[@sdocs string]],
 [[@exits Exit.info list]], [[@envs Env.info list]], [[@man Manpage.block list]]
-and [[@man_xrefs Manpage.xref list]] are also supported. For their exact usage,
+and [[@man_xrefs Manpage.xref list]] are also supported. For their exact usages,
 please refer to the documentation of {{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Cmd/index.html#val-info}Cmdliner.Cmd.info}.
 
 

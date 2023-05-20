@@ -135,20 +135,42 @@ end
 
 type conv = Conv.t
 
+module Cmd_env_info = struct
+  let expr_of_attrs ~loc (attrs : attrs) : expression option =
+    Ast_helper.with_default_loc loc (fun () ->
+        Ap.to_expr_opt attrs.env
+        |> Option.map (fun env_epxr ->
+               let args =
+                 let labelled =
+                   [
+                     ("deprecated", Ap.to_expr_opt attrs.env_deprecated);
+                     ("docs", Ap.to_expr_opt attrs.env_docs);
+                     ("doc", Ap.to_expr_opt attrs.env_doc);
+                   ]
+                   |> List.filter_map (fun (name, expr_opt) ->
+                          Option.map
+                            (fun expr -> (Labelled name, expr))
+                            expr_opt)
+                 and no_label = [ (Nolabel, env_epxr) ] in
+                 labelled @ no_label
+               in
+
+               Ast_helper.Exp.apply [%expr Cmdliner.Cmd.Env.info] args))
+end
+
 module Info = struct
   let expr_of_attrs ~loc (names_expr : expression) (attrs : attrs) : expression
       =
     Ast_helper.with_default_loc loc (fun () ->
         let args =
           let labelled =
-            let f = Ap.to_expr_opt in
             [
-              ("deprecated", f attrs.deprecated);
-              ("absent", f attrs.absent);
-              ("docs", f attrs.docs);
-              ("docv", f attrs.docv);
-              ("doc", f attrs.doc);
-              ("env", f attrs.env);
+              ("deprecated", Ap.to_expr_opt attrs.deprecated);
+              ("absent", Ap.to_expr_opt attrs.absent);
+              ("docs", Ap.to_expr_opt attrs.docs);
+              ("docv", Ap.to_expr_opt attrs.docv);
+              ("doc", Ap.to_expr_opt attrs.doc);
+              ("env", Cmd_env_info.expr_of_attrs ~loc attrs);
             ]
             |> List.filter_map (fun (name, expr_opt) ->
                    Option.map (fun expr -> (Labelled name, expr)) expr_opt)
