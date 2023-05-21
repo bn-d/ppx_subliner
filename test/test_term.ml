@@ -1,9 +1,19 @@
+open Ppxlib
+module Ap = Ppx_subliner.Attribute_parser.Term
+
+let loc = Location.none
+
 let cmd term =
   let info = Cmdliner.Cmd.info "cmd" in
   Cmdliner.Cmd.v info Cmdliner.Term.(const Fun.id $ term ())
 
 let test_ok prefix term = Utils.test_cmd_ok prefix (cmd term)
 let test_error prefix term = Utils.test_cmd_error prefix (cmd term)
+
+let test_raise =
+  Utils.test_raises (fun (ct, attrs) ->
+      let name = { txt = "field"; loc } in
+      Ppx_subliner.Term.T.expr_of_attrs ~loc name ct attrs)
 
 module Named = struct
   type simple = {
@@ -187,6 +197,7 @@ type sep = {
 [@@deriving subliner]
 
 let test_set =
+  let f = (loc, [%str]) and e = (loc, [%str expr]) in
   let test_names = test_ok "names" names_cmdliner_term
   and test_sep = test_ok "sep" sep_cmdliner_term in
   [
@@ -210,4 +221,26 @@ let test_set =
         "--nested=0#0#0;255#255#255";
         "--last-sep=9@10";
       |];
+    test_raise "multi_pos"
+      ~exn:
+        "only one of `pos`, `pos_all`, `pos_left` and `pos_right` can be \
+         specified at the same time"
+      ([%type: int], Ap.make_t ~pos:e ~pos_all:f ());
+    test_raise "pos_names_conflict"
+      ~exn:"`names` cannot be used with positional argument"
+      ([%type: int], Ap.make_t ~pos:f ~names:e ());
+    test_raise "pos_opt_all_conflict"
+      ~exn:"`opt_all` cannot be used with positional argument"
+      ([%type: int], Ap.make_t ~pos:e ~opt_all:f ());
+    test_raise "pos_all_rev_conflict" ~exn:"`rev` cannot be used with `pos_all`"
+      ([%type: int], Ap.make_t ~pos_all:f ~rev:f ());
+    test_raise "pos_sep_conflict"
+      ~exn:"`sep` cannot be used with `pos_left`, `pos_right` and `pos_all`"
+      ([%type: (int list[@sep ','])], Ap.make_t ~pos_all:f ());
+    test_raise "pos.invalid"
+      ~exn:"`pos_left`, `pos_right` and `pos_all` must be used with list type"
+      ([%type: int], Ap.make_t ~pos_all:f ());
+    test_raise "non_empty.invalid"
+      ~exn:"`non_empty` must be used with list type"
+      ([%type: int], Ap.make_t ~non_empty:f ());
   ]

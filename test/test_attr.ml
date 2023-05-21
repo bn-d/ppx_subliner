@@ -69,7 +69,8 @@ module Common = struct
         (fun { doc; _ } -> doc |> Option.get |> List.length |> ( = ) 1)
         [%expr t [@subliner.doc ""] [@doc]];
       (* expected failure *)
-      test_raises "invalid_payload" ~exn:"unsupported payload for attribute"
+      test_raises "invalid_payload"
+        ~exn:"this attribute payload must be an expression"
         [%expr t [@doc: int]];
       test_raises "invalid_attr" ~exn:"unexpected attribute name: irrelevant"
         [%expr t [@subliner.irrelevant]];

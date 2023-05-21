@@ -348,7 +348,7 @@ module Positional = struct
               (`last (), conv, default_expr)
           | _, List (Some _, _) ->
               Location.raise_errorf ~loc
-                "`names` cannot be used with `pos_left`, `pos_right` and \
+                "`sep` cannot be used with `pos_left`, `pos_right` and \
                  `pos_all`"
           | _ ->
               Location.raise_errorf ~loc
