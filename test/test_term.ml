@@ -179,6 +179,7 @@ module Positional = struct
   [@@deriving subliner]
 
   type all = { nested : int list list [@pos_all] } [@@deriving subliner]
+  type rev = { rev : int list [@pos 0] [@rev] } [@@deriving subliner]
 
   let test_set =
     let test_simple = test_equal "simple" simple_cmdliner_term
@@ -222,6 +223,8 @@ module Positional = struct
         { nested = [ [ 1 ]; [ 2 ]; [ 3 ] ] }
         [| "cmd"; "1"; "2"; "3" |];
       test_all "empty" { nested = [] } [| "cmd" |];
+      test_equal "pos_list" rev_cmdliner_term "rev" { rev = [ 3 ] }
+        [| "cmd"; "1"; "2"; "3" |];
     ]
 end
 
