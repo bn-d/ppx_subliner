@@ -3,6 +3,23 @@ open Ppxlib
 let diff_msg = "actual is different from expected"
 let pp _ _ = ()
 
+let eval_error_to_string : Cmdliner.Cmd.eval_error -> string = function
+  | `Parse -> "A parse error occurred"
+  | `Term -> "A term evaluation error occurred"
+  | `Exn -> "An uncaught exception occurred"
+
+let eval_error =
+  Alcotest.of_pp (fun fmt e ->
+      Format.pp_print_string fmt @@ eval_error_to_string e)
+
+let eval pp =
+  Alcotest.of_pp (fun fmt o ->
+      match o with
+      | Ok (`Ok t) -> Format.fprintf fmt "`ok(%a)" pp t
+      | Ok `Version -> Format.pp_print_string fmt "`version"
+      | Ok `Help -> Format.pp_print_string fmt "`help"
+      | Error e -> Format.fprintf fmt "`error(%s)" @@ eval_error_to_string e)
+
 let testf f name check input =
   let test () =
     let res = check @@ f input in
@@ -30,12 +47,15 @@ let test_raises f name ~exn input =
   in
   Alcotest.test_case name `Quick test
 
-let eval_error_to_string : Cmdliner.Cmd.eval_error -> string = function
-  | `Parse -> "A parse error occurred"
-  | `Term -> "A term evaluation error occurred"
-  | `Exn -> "An uncaught exception occurred"
+let test_cmd prefix cmd name expected argv =
+  let f () =
+    Cmdliner.Cmd.eval_value ~argv cmd
+    |> Alcotest.check (eval pp) diff_msg expected
+  in
+  Alcotest.test_case (prefix ^ "." ^ name) `Quick f
 
-let eval_error =
-  Alcotest.testable
-    (fun fmt e -> Format.pp_print_string fmt @@ eval_error_to_string e)
-    ( = )
+let test_cmd_ok prefix cmd name expected argv =
+  test_cmd prefix cmd name (Ok (`Ok expected)) argv
+
+let test_cmd_error prefix cmd name expected argv =
+  test_cmd prefix cmd name (Error expected) argv

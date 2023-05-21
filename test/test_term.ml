@@ -27,35 +27,12 @@ module Info = struct
     ]
 end
 
-let test prefix check term name expected argv =
-  let f () =
-    let cmd =
-      let info = Cmd.info "cmd" in
-      Cmd.v info Term.(const Fun.id $ term ())
-    in
-    Cmd.eval_value ~argv cmd |> check expected
-  in
-  Alcotest.test_case (prefix ^ "." ^ name) `Quick f
+let cmd term =
+  let info = Cmd.info "cmd" in
+  Cmd.v info Term.(const Fun.id $ term ())
 
-let test_equal prefix term name expected argv =
-  let t = Alcotest.of_pp Utils.pp in
-  test prefix
-    (fun expected result ->
-      match result with
-      | Ok (`Ok actual) -> Alcotest.check t Utils.diff_msg expected actual
-      | Ok _ -> Alcotest.fail "unexpected eva_ok result"
-      | Error e ->
-          Alcotest.failf "eval error: %s" @@ Utils.eval_error_to_string e)
-    term name expected argv
-
-let test_error prefix term name expected argv =
-  test prefix
-    (fun expected actual ->
-      match actual with
-      | Error actual ->
-          Alcotest.check Utils.eval_error Utils.diff_msg expected actual
-      | Ok _ -> Alcotest.fail "test expected to fail")
-    term name expected argv
+let test_ok prefix term = Utils.test_cmd_ok prefix (cmd term)
+let test_error prefix term = Utils.test_cmd_error prefix (cmd term)
 
 module Named = struct
   type simple = {
@@ -80,9 +57,9 @@ module Named = struct
   [@@deriving subliner]
 
   let test_set =
-    let test_simple = test_equal "simple" simple_cmdliner_term
+    let test_simple = test_ok "simple" simple_cmdliner_term
     and test_simple_error = test_error "simple" simple_cmdliner_term
-    and test_opt_all = test_equal "opt_all" opt_all_cmdliner_term
+    and test_opt_all = test_ok "opt_all" opt_all_cmdliner_term
     and test_opt_all_error = test_error "opt_all" opt_all_cmdliner_term in
     [
       test_simple "simple"
@@ -180,12 +157,12 @@ module Positional = struct
   type rev = { rev : int list [@pos 0] [@rev] } [@@deriving subliner]
 
   let test_set =
-    let test_simple = test_equal "simple" simple_cmdliner_term
+    let test_simple = test_ok "simple" simple_cmdliner_term
     and test_simple_error = test_error "simple" simple_cmdliner_term
-    and test_left = test_equal "list_pos" left_cmdliner_term
-    and test_right = test_equal "list_pos" right_cmdliner_term
+    and test_left = test_ok "list_pos" left_cmdliner_term
+    and test_right = test_ok "list_pos" right_cmdliner_term
     and test_right_error = test_error "list_pos" right_cmdliner_term
-    and test_all = test_equal "list_pos" all_cmdliner_term in
+    and test_all = test_ok "list_pos" all_cmdliner_term in
     [
       test_simple "simple"
         {
@@ -221,7 +198,7 @@ module Positional = struct
         { nested = [ [ 1 ]; [ 2 ]; [ 3 ] ] }
         [| "cmd"; "1"; "2"; "3" |];
       test_all "empty" { nested = [] } [| "cmd" |];
-      test_equal "pos_list" rev_cmdliner_term "rev" { rev = [ 3 ] }
+      test_ok "pos_list" rev_cmdliner_term "rev" { rev = [ 3 ] }
         [| "cmd"; "1"; "2"; "3" |];
     ]
 end
@@ -239,8 +216,8 @@ type sep = {
 [@@deriving subliner]
 
 let test_set =
-  let test_names = test_equal "names" names_cmdliner_term
-  and test_sep = test_equal "sep" sep_cmdliner_term in
+  let test_names = test_ok "names" names_cmdliner_term
+  and test_sep = test_ok "sep" sep_cmdliner_term in
   [
     test_names "long" { names = 1 } [| "cmd"; "--new_name"; "1" |];
     test_names "short" { names = 1 } [| "cmd"; "-n"; "1" |];
