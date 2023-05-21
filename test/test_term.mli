@@ -1,7 +1,3 @@
-module Info : sig
-  val test_set : unit Alcotest.test_case list
-end
-
 module Named : sig
   type simple = {
     flag : bool;

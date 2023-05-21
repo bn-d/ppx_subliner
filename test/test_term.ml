@@ -1,35 +1,6 @@
-open Ppxlib
-module Cmd = Cmdliner.Cmd
-module Term = Cmdliner.Term
-module Attr = Ppx_subliner.Attribute_parser.Term
-
-let loc = Location.none
-
-module Info = struct
-  module M = Ppx_subliner.Term.Info
-
-  let test_gen =
-    Utils.test_equal Utils.pp (M.expr_of_attrs ~loc [%expr [ "NAME" ]])
-
-  let test_set =
-    let u = (loc, [%str ()]) in
-    [
-      test_gen "empty" [%expr Cmdliner.Arg.info [ "NAME" ]] Attr.empty;
-      test_gen "all"
-        (let env_expr =
-           [%expr Cmdliner.Cmd.Env.info ~deprecated:() ~docs:() ~doc:() ()]
-         in
-         [%expr
-           Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:() ~doc:()
-             ~env:[%e env_expr] [ "NAME" ]])
-        (Attr.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u
-           ~env_deprecated:u ~env_docs:u ~env_doc:u ());
-    ]
-end
-
 let cmd term =
-  let info = Cmd.info "cmd" in
-  Cmd.v info Term.(const Fun.id $ term ())
+  let info = Cmdliner.Cmd.info "cmd" in
+  Cmdliner.Cmd.v info Cmdliner.Term.(const Fun.id $ term ())
 
 let test_ok prefix term = Utils.test_cmd_ok prefix (cmd term)
 let test_error prefix term = Utils.test_cmd_error prefix (cmd term)
