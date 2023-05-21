@@ -240,6 +240,11 @@ let test_set =
     test_raise "pos.invalid"
       ~exn:"`pos_left`, `pos_right` and `pos_all` must be used with list type"
       ([%type: int], Ap.make_t ~pos_all:f ());
+    test_raise "opt_all_sep_conflict"
+      ~exn:"`opt_all` and `sep` cannot be used on the same list"
+      ([%type: (int list[@sep ','])], Ap.make_t ~opt_all:f ());
+    test_raise "opt_all.invalid" ~exn:"`opt_all` must be used with list type"
+      ([%type: int], Ap.make_t ~opt_all:f ());
     test_raise "non_empty.invalid"
       ~exn:"`non_empty` must be used with list type"
       ([%type: int], Ap.make_t ~non_empty:f ());
