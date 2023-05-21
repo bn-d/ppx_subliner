@@ -153,6 +153,9 @@ Set the argument to be positional. [[@pos_all]], [[@pos_right int]] and
 [[@pos_left int]] must be used with a list type or used with {!attr_last} attribute
 at the same time.
 
+[[@rev]] can be used with [[@pos int]], [[@pos_right int]] and [[@pos_left int]]
+to compute the argument position in reverse order.
+
 Conflict with {!attr_opt_all}.
 
 {[
