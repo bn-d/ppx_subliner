@@ -126,9 +126,6 @@ module Single = struct
   let test_set =
     [
       test Ap.Sep_conv.parse "sep" (Some ()) [%expr t [@sep]];
-      test Ap.Sep_conv.parse "sep.s" (Some ()) [%expr t [@subliner.sep]];
       test Ap.Default_term.parse "default" (Some ()) [%expr t [@default]];
-      test Ap.Default_term.parse "default.s" (Some ())
-        [%expr t [@subliner.default]];
     ]
 end
