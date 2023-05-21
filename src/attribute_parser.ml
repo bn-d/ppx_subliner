@@ -105,13 +105,13 @@ module Term = struct
     pos_all : 'a option;
     pos_left : 'a option;
     pos_right : 'a option;
+    rev : 'a option;
     (* as term *)
     non_empty : 'a option;
     last : 'a option;
     last_sep : 'a option;
     (* type *)
     default : 'a option;
-        (* TODO: support rev *)
   }
   [@@deriving make]
 
@@ -135,6 +135,7 @@ module Term = struct
         pos_all;
         pos_left;
         pos_right;
+        rev;
         non_empty;
         last;
         last_sep;
@@ -161,6 +162,7 @@ module Term = struct
       pos_all = f pos_all;
       pos_left = f pos_left;
       pos_right = f pos_right;
+      rev = f rev;
       (* as term *)
       non_empty = f non_empty;
       last = f last;
@@ -185,6 +187,7 @@ module Term = struct
     | "pos_all" -> Some `pos_all
     | "pos_left" -> Some `pos_left
     | "pos_right" -> Some `pos_right
+    | "rev" -> Some `rev
     | "non_empty" -> Some `non_empty
     | "last" -> Some `last
     | "last.sep" -> Some `last_sep
@@ -209,6 +212,7 @@ module Term = struct
     | `pos_all -> { t with pos_all = Level.join t.pos_all v }
     | `pos_left -> { t with pos_left = Level.join t.pos_left v }
     | `pos_right -> { t with pos_right = Level.join t.pos_right v }
+    | `rev -> { t with rev = Level.join t.rev v }
     | `non_empty -> { t with non_empty = Level.join t.non_empty v }
     | `last -> { t with last = Level.join t.last v }
     | `last_sep -> { t with last_sep = Level.join t.last_sep v }

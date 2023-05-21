@@ -300,7 +300,7 @@ module Positional = struct
         ()
     in
     let type_ =
-      let rev = false (* TODO: support rev *) in
+      let rev = Ap.to_bool attrs.rev in
       match attrs with
       | { pos = Some pos; _ } ->
           let pos_expr = Ap.to_expr pos in
