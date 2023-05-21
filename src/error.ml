@@ -7,7 +7,7 @@ let unsupported_type ~loc type_ { txt = name; loc = _ } =
 
 let field_type ~loc = f ~loc "unsupported field type"
 let attribute_name ~loc name = f ~loc "unexpected attribute name: %s" name
-let attribute_payload ~loc = f ~loc "unsupported payload for attribute"
+let attribute_payload ~loc = f ~loc "payload of `%s` must be an expression"
 let attribute_flag ~loc = f ~loc "flag cannot have any payload"
 let attr_list_type ~loc = f ~loc "`%s` must be used with list type"
 

@@ -12,7 +12,8 @@ let test_set =
   [
     test "empty" (`value None) Ap.empty;
     test "default" (`value (Some unit_expr)) (Ap.make_t ~default:u ());
-    test_raises "default.invalid" ~exn:"unsupported payload for attribute"
+    test_raises "default.invalid"
+      ~exn:"payload of `default` must be an expression"
       (Ap.make_t ~default:s ());
     test "non_empty" `non_empty (Ap.make_t ~non_empty:s ());
     test_raises "non_empty.invalid" ~exn:"flag cannot have any payload"

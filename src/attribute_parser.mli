@@ -1,8 +1,10 @@
 val to_bool : (Ppxlib.location * Ppxlib.structure) option -> bool
-val to_expr : Ppxlib.location * Ppxlib.structure -> Ppxlib.expression
+val to_expr : string -> Ppxlib.location * Ppxlib.structure -> Ppxlib.expression
 
 val to_expr_opt :
-  (Ppxlib.location * Ppxlib.structure) option -> Ppxlib.expression option
+  string ->
+  (Ppxlib.location * Ppxlib.structure) option ->
+  Ppxlib.expression option
 
 module Term : sig
   type 'a t = {

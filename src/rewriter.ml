@@ -23,7 +23,7 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
         Group_cmds.Info.expr_of_attrs ~loc default_name_expr attrs
       and default_term_expr =
         Ap.Default_term.parse attrs
-        |> Ap.to_expr_opt
+        |> Ap.to_expr_opt "default"
         |> Option.value
              ~default:[%expr Cmdliner.Term.(ret (const (`Help (`Auto, None))))]
       and group_cmd_fun_expr =

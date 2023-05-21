@@ -1,63 +1,19 @@
 open Ppxlib
-module Cmd = Cmdliner.Cmd
-module Term = Cmdliner.Term
-module Attr = Ppx_subliner.Attribute_parser.Term
-
-type attrs = Ppx_subliner.Term.attrs
+module Ap = Ppx_subliner.Attribute_parser.Term
 
 let loc = Location.none
 
-module Info = struct
-  module M = Ppx_subliner.Term.Info
+let cmd term =
+  let info = Cmdliner.Cmd.info "cmd" in
+  Cmdliner.Cmd.v info Cmdliner.Term.(const Fun.id $ term ())
 
-  let test_gen =
-    Utils.test_equal Utils.pp (M.expr_of_attrs ~loc [%expr [ "NAME" ]])
+let test_ok prefix term = Utils.test_cmd_ok prefix (cmd term)
+let test_error prefix term = Utils.test_cmd_error prefix (cmd term)
 
-  let test_set =
-    let u = (loc, [%str ()]) in
-    [
-      test_gen "empty" [%expr Cmdliner.Arg.info [ "NAME" ]] Attr.empty;
-      test_gen "all"
-        (let env_expr =
-           [%expr Cmdliner.Cmd.Env.info ~deprecated:() ~docs:() ~doc:() ()]
-         in
-         [%expr
-           Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:() ~doc:()
-             ~env:[%e env_expr] [ "NAME" ]])
-        (Attr.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u
-           ~env_deprecated:u ~env_docs:u ~env_doc:u ());
-    ]
-end
-
-let test prefix check term name expected argv =
-  let f () =
-    let cmd =
-      let info = Cmd.info "cmd" in
-      Cmd.v info Term.(const Fun.id $ term ())
-    in
-    Cmd.eval_value ~argv cmd |> check expected
-  in
-  Alcotest.test_case (prefix ^ "." ^ name) `Quick f
-
-let test_equal prefix term name expected argv =
-  let t = Alcotest.of_pp Utils.pp in
-  test prefix
-    (fun expected result ->
-      match result with
-      | Ok (`Ok actual) -> Alcotest.check t Utils.diff_msg expected actual
-      | Ok _ -> Alcotest.fail "unexpected eva_ok result"
-      | Error e ->
-          Alcotest.failf "eval error: %s" @@ Utils.eval_error_to_string e)
-    term name expected argv
-
-let test_error prefix term name expected argv =
-  test prefix
-    (fun expected actual ->
-      match actual with
-      | Error actual ->
-          Alcotest.check Utils.eval_error Utils.diff_msg expected actual
-      | Ok _ -> Alcotest.fail "test expected to fail")
-    term name expected argv
+let test_raise =
+  Utils.test_raises (fun (ct, attrs) ->
+      let name = { txt = "field"; loc } in
+      Ppx_subliner.Term.T.expr_of_attrs ~loc name ct attrs)
 
 module Named = struct
   type simple = {
@@ -82,9 +38,9 @@ module Named = struct
   [@@deriving subliner]
 
   let test_set =
-    let test_simple = test_equal "simple" simple_cmdliner_term
+    let test_simple = test_ok "simple" simple_cmdliner_term
     and test_simple_error = test_error "simple" simple_cmdliner_term
-    and test_opt_all = test_equal "opt_all" opt_all_cmdliner_term
+    and test_opt_all = test_ok "opt_all" opt_all_cmdliner_term
     and test_opt_all_error = test_error "opt_all" opt_all_cmdliner_term in
     [
       test_simple "simple"
@@ -182,12 +138,12 @@ module Positional = struct
   type rev = { rev : int list [@pos 0] [@rev] } [@@deriving subliner]
 
   let test_set =
-    let test_simple = test_equal "simple" simple_cmdliner_term
+    let test_simple = test_ok "simple" simple_cmdliner_term
     and test_simple_error = test_error "simple" simple_cmdliner_term
-    and test_left = test_equal "list_pos" left_cmdliner_term
-    and test_right = test_equal "list_pos" right_cmdliner_term
+    and test_left = test_ok "list_pos" left_cmdliner_term
+    and test_right = test_ok "list_pos" right_cmdliner_term
     and test_right_error = test_error "list_pos" right_cmdliner_term
-    and test_all = test_equal "list_pos" all_cmdliner_term in
+    and test_all = test_ok "list_pos" all_cmdliner_term in
     [
       test_simple "simple"
         {
@@ -223,7 +179,7 @@ module Positional = struct
         { nested = [ [ 1 ]; [ 2 ]; [ 3 ] ] }
         [| "cmd"; "1"; "2"; "3" |];
       test_all "empty" { nested = [] } [| "cmd" |];
-      test_equal "pos_list" rev_cmdliner_term "rev" { rev = [ 3 ] }
+      test_ok "pos_list" rev_cmdliner_term "rev" { rev = [ 3 ] }
         [| "cmd"; "1"; "2"; "3" |];
     ]
 end
@@ -241,8 +197,9 @@ type sep = {
 [@@deriving subliner]
 
 let test_set =
-  let test_names = test_equal "names" names_cmdliner_term
-  and test_sep = test_equal "sep" sep_cmdliner_term in
+  let f = (loc, [%str]) and e = (loc, [%str expr]) in
+  let test_names = test_ok "names" names_cmdliner_term
+  and test_sep = test_ok "sep" sep_cmdliner_term in
   [
     test_names "long" { names = 1 } [| "cmd"; "--new_name"; "1" |];
     test_names "short" { names = 1 } [| "cmd"; "-n"; "1" |];
@@ -264,4 +221,31 @@ let test_set =
         "--nested=0#0#0;255#255#255";
         "--last-sep=9@10";
       |];
+    test_raise "multi_pos"
+      ~exn:
+        "only one of `pos`, `pos_all`, `pos_left` and `pos_right` can be \
+         specified at the same time"
+      ([%type: int], Ap.make_t ~pos:e ~pos_all:f ());
+    test_raise "pos_names_conflict"
+      ~exn:"`names` cannot be used with positional argument"
+      ([%type: int], Ap.make_t ~pos:f ~names:e ());
+    test_raise "pos_opt_all_conflict"
+      ~exn:"`opt_all` cannot be used with positional argument"
+      ([%type: int], Ap.make_t ~pos:e ~opt_all:f ());
+    test_raise "pos_all_rev_conflict" ~exn:"`rev` cannot be used with `pos_all`"
+      ([%type: int], Ap.make_t ~pos_all:f ~rev:f ());
+    test_raise "pos_sep_conflict"
+      ~exn:"`sep` cannot be used with `pos_left`, `pos_right` and `pos_all`"
+      ([%type: (int list[@sep ','])], Ap.make_t ~pos_all:f ());
+    test_raise "pos.invalid"
+      ~exn:"`pos_left`, `pos_right` and `pos_all` must be used with list type"
+      ([%type: int], Ap.make_t ~pos_all:f ());
+    test_raise "opt_all_sep_conflict"
+      ~exn:"`opt_all` and `sep` cannot be used on the same list"
+      ([%type: (int list[@sep ','])], Ap.make_t ~opt_all:f ());
+    test_raise "opt_all.invalid" ~exn:"`opt_all` must be used with list type"
+      ([%type: int], Ap.make_t ~opt_all:f ());
+    test_raise "non_empty.invalid"
+      ~exn:"`non_empty` must be used with list type"
+      ([%type: int], Ap.make_t ~non_empty:f ());
   ]

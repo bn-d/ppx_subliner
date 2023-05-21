@@ -59,19 +59,29 @@ module Conv = struct
     | [%type: [%t? in_ct] option] | [%type: [%t? in_ct] Option.t] ->
         Option (of_core_type in_ct)
     | ([%type: [%t? in_ct] list] as ct) | ([%type: [%t? in_ct] List.t] as ct) ->
-        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
+        let sep =
+          Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt "sep"
+        in
         List (sep, of_core_type in_ct)
     | ([%type: [%t? in_ct] array] | [%type: [%t? in_ct] Array.t]) as ct ->
-        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
+        let sep =
+          Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt "sep"
+        in
         Array (sep, of_core_type in_ct)
     | [%type: [%t? t0] * [%t? t1]] as ct ->
-        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
+        let sep =
+          Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt "sep"
+        in
         Pair (sep, (of_core_type t0, of_core_type t1))
     | [%type: [%t? t0] * [%t? t1] * [%t? t2]] as ct ->
-        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
+        let sep =
+          Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt "sep"
+        in
         T3 (sep, (of_core_type t0, of_core_type t1, of_core_type t2))
     | [%type: [%t? t0] * [%t? t1] * [%t? t2] * [%t? t3]] as ct ->
-        let sep = Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt in
+        let sep =
+          Ap.Sep_conv.parse ct.ptyp_attributes |> Ap.to_expr_opt "sep"
+        in
         T4
           ( sep,
             (of_core_type t0, of_core_type t1, of_core_type t2, of_core_type t3)
@@ -138,14 +148,15 @@ type conv = Conv.t
 module Cmd_env_info = struct
   let expr_of_attrs ~loc (attrs : attrs) : expression option =
     Ast_helper.with_default_loc loc (fun () ->
-        Ap.to_expr_opt attrs.env
+        Ap.to_expr_opt "env" attrs.env
         |> Option.map (fun env_epxr ->
                let args =
                  let labelled =
                    [
-                     ("deprecated", Ap.to_expr_opt attrs.env_deprecated);
-                     ("docs", Ap.to_expr_opt attrs.env_docs);
-                     ("doc", Ap.to_expr_opt attrs.env_doc);
+                     ( "deprecated",
+                       Ap.to_expr_opt "env.deprecated" attrs.env_deprecated );
+                     ("docs", Ap.to_expr_opt "env.docs" attrs.env_docs);
+                     ("doc", Ap.to_expr_opt "env.doc" attrs.env_doc);
                    ]
                    |> List.filter_map (fun (name, expr_opt) ->
                           Option.map
@@ -165,11 +176,11 @@ module Info = struct
         let args =
           let labelled =
             [
-              ("deprecated", Ap.to_expr_opt attrs.deprecated);
-              ("absent", Ap.to_expr_opt attrs.absent);
-              ("docs", Ap.to_expr_opt attrs.docs);
-              ("docv", Ap.to_expr_opt attrs.docv);
-              ("doc", Ap.to_expr_opt attrs.doc);
+              ("deprecated", Ap.to_expr_opt "deprecated" attrs.deprecated);
+              ("absent", Ap.to_expr_opt "absent" attrs.absent);
+              ("docs", Ap.to_expr_opt "docs" attrs.docs);
+              ("docv", Ap.to_expr_opt "docv" attrs.docv);
+              ("doc", Ap.to_expr_opt "doc" attrs.doc);
               ("env", Cmd_env_info.expr_of_attrs ~loc attrs);
             ]
             |> List.filter_map (fun (name, expr_opt) ->
@@ -188,7 +199,7 @@ module As_term = struct
       | `last of expression option * expression option ] =
     let non_empty = Ap.to_bool attrs.non_empty
     and last = Ap.to_bool attrs.last
-    and default = Ap.to_expr_opt attrs.default in
+    and default = Ap.to_expr_opt "default" attrs.default in
     match (non_empty, last, default) with
     | true, false, None -> `non_empty
     | true, true, _ ->
@@ -198,7 +209,7 @@ module As_term = struct
         Location.raise_errorf ~loc
           "`non_empty` and `default` cannot be used at the same time"
     | false, true, _ ->
-        let sep = Ap.to_expr_opt attrs.last_sep in
+        let sep = Ap.to_expr_opt "sep" attrs.last_sep in
         `last (sep, default)
     | false, false, _ -> `value default
 
@@ -264,7 +275,9 @@ module Named = struct
         |> Ast_builder.Default.estring ~loc:name.loc
         |> Utils.elist ~loc
       in
-      attrs.names |> Ap.to_expr_opt |> Option.value ~default:default_names_expr
+      attrs.names
+      |> Ap.to_expr_opt "names"
+      |> Option.value ~default:default_names_expr
     in
 
     let as_term_expr = As_term.to_expr ~loc as_term
@@ -290,7 +303,7 @@ module Positional = struct
   let expr_of_attrs ~loc ct (attrs : attrs) : expression =
     let () =
       attrs.names
-      |> Ap.to_expr_opt
+      |> Ap.to_expr_opt "names"
       |> Option.fold ~none:() ~some:(fun _ ->
              Error.f ~loc "`names` cannot be used with positional argument")
     and () =
@@ -303,13 +316,13 @@ module Positional = struct
       let rev = Ap.to_bool attrs.rev in
       match attrs with
       | { pos = Some pos; _ } ->
-          let pos_expr = Ap.to_expr pos in
+          let pos_expr = Ap.to_expr "pos" pos in
           `pos (rev, pos_expr)
       | { pos_left = Some pos; _ } ->
-          let pos_expr = Ap.to_expr pos in
+          let pos_expr = Ap.to_expr "pos_left" pos in
           `pos_left (rev, pos_expr)
       | { pos_right = Some pos; _ } ->
-          let pos_expr = Ap.to_expr pos in
+          let pos_expr = Ap.to_expr "pos_right" pos in
           `pos_right (rev, pos_expr)
       | { pos_all = Some _; _ } when rev ->
           Location.raise_errorf ~loc "`rev` cannot be used with `pos_all`"
@@ -348,7 +361,7 @@ module Positional = struct
               (`last (), conv, default_expr)
           | _, List (Some _, _) ->
               Location.raise_errorf ~loc
-                "`names` cannot be used with `pos_left`, `pos_right` and \
+                "`sep` cannot be used with `pos_left`, `pos_right` and \
                  `pos_all`"
           | _ ->
               Location.raise_errorf ~loc
