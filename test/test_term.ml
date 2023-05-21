@@ -3,8 +3,6 @@ module Cmd = Cmdliner.Cmd
 module Term = Cmdliner.Term
 module Attr = Ppx_subliner.Attribute_parser.Term
 
-type attrs = Ppx_subliner.Term.attrs
-
 let loc = Location.none
 
 module Info = struct
