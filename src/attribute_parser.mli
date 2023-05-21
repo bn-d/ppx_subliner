@@ -24,6 +24,7 @@ module Term : sig
     pos_all : 'a option;
     pos_left : 'a option;
     pos_right : 'a option;
+    rev : 'a option;
     (* as term *)
     non_empty : 'a option;
     last : 'a option;

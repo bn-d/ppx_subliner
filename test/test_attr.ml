@@ -60,6 +60,8 @@ module Term = struct
       test "pos_right.s"
         (M.make_t ~pos_right:() ())
         [%expr t [@subliner.pos_right]];
+      test "rev" (M.make_t ~rev:() ()) [%expr t [@rev]];
+      test "rev.s" (M.make_t ~rev:() ()) [%expr t [@subliner.rev]];
       test "non_empty" (M.make_t ~non_empty:() ()) [%expr t [@non_empty]];
       test "non_empty.s"
         (M.make_t ~non_empty:() ())
