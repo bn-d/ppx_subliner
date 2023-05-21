@@ -70,7 +70,7 @@ module Common = struct
         [%expr t [@subliner.doc ""] [@doc]];
       (* expected failure *)
       test_raises "invalid_payload"
-        ~exn:"this attribute payload must be an expression"
+        ~exn:"payload of `attribute` must be an expression"
         [%expr t [@doc: int]];
       test_raises "invalid_attr" ~exn:"unexpected attribute name: irrelevant"
         [%expr t [@subliner.irrelevant]];

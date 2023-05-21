@@ -17,7 +17,8 @@ module Info = struct
     Ast_helper.with_default_loc loc (fun () ->
         (* get cmd info args from attributes *)
         let info_attrs =
-          Ap.Cmd_info.parse attrs |> Ap.Cmd_info.map Ap.to_expr
+          Ap.Cmd_info.parse attrs
+          |> Ap.Cmd_info.map (Ap.to_expr "Cmdliner.Cmd.info attributes")
         in
         let name_expr =
           Option.fold ~none:default_name_expr ~some:Fun.id info_attrs.name

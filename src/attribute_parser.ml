@@ -60,7 +60,7 @@ let parse_impl
                   (fun _ ->
                     match attr.attr_payload with
                     | PStr structure -> (loc, structure)
-                    | _ -> Error.attribute_payload ~loc)
+                    | _ -> Error.attribute_payload ~loc "attribute")
                   field)
                acc)
        empty
@@ -79,11 +79,11 @@ let to_bool =
     | _, [] -> true
     | loc, _ -> Error.attribute_flag ~loc)
 
-let to_expr = function
+let to_expr name = function
   | _, [ { pstr_desc = Pstr_eval (expr, _); _ } ] -> expr
-  | loc, _ -> Error.attribute_payload ~loc
+  | loc, _ -> Error.attribute_payload ~loc name
 
-let to_expr_opt = Option.map to_expr
+let to_expr_opt name = Option.map (to_expr name)
 
 module Term = struct
   type 'a t = {
