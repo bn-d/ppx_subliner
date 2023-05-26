@@ -114,6 +114,7 @@ module Term = struct
     default : 'a option;
   }
   [@@deriving make]
+  (* TODO: support term *)
 
   let empty = make_t ()
 
@@ -252,6 +253,8 @@ end
 module Sep_conv = struct
   let parse = parse_single "sep"
 end
+
+(* TODO: support conv *)
 
 module Cmd_info = struct
   type 'a t = {
