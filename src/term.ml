@@ -400,7 +400,7 @@ module T = struct
            specified at the same time"
 end
 
-let make_fun_vb_expr_of_label_decls ~loc (lds : label_declaration list) =
+let make_fun_vb_expr_of_label_decls ~loc ~const (lds : label_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
       let vb =
         let pat = Ast_helper.Pat.var { txt = "make"; loc }
@@ -412,11 +412,18 @@ let make_fun_vb_expr_of_label_decls ~loc (lds : label_declaration list) =
           |> fun fields ->
           Ast_helper.Exp.record fields None
           |> fun record_expr ->
+          (match const with
+          | None -> record_expr
+          | Some const ->
+              Ast_helper.Exp.construct
+                (Utils.longident_loc_of_name const)
+                (Some record_expr))
+          |> fun value_expr ->
           List.fold_left
             (fun acc ld ->
               let pat = Ast_helper.Pat.var ld.pld_name in
               Ast_helper.Exp.fun_ Nolabel None pat acc)
-            record_expr (List.rev lds)
+            value_expr (List.rev lds)
         in
         Ast_helper.Vb.mk pat expr
       and var_expr = [%expr make] in
@@ -461,9 +468,9 @@ let core_type_of_type_name ~loc name =
   in
   [%type: unit -> [%t ct] Cmdliner.Term.t]
 
-let expression_of_label_decls ~loc (lds : label_declaration list) =
+let expression_of_label_decls ~loc ~const (lds : label_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
-      let make_vb, make_expr = make_fun_vb_expr_of_label_decls ~loc lds
+      let make_vb, make_expr = make_fun_vb_expr_of_label_decls ~loc ~const lds
       and term_vbs, term_exprs =
         lds |> List.map term_vb_expr_of_label_decl |> List.split
       in
@@ -477,7 +484,7 @@ let structure_of_label_decls ~loc name (lds : label_declaration list) =
       let stri =
         let pat = Ast_helper.Pat.var @@ gen_name name
         and ct = core_type_of_type_name ~loc name
-        and expr = expression_of_label_decls ~loc lds in
+        and expr = expression_of_label_decls ~loc ~const:None lds in
         [%stri let ([%p pat] : [%t ct]) = fun () -> [%e expr]]
       in
       [ stri ])

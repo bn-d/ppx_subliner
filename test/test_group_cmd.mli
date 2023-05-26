@@ -11,6 +11,7 @@ type simple =
   | Simple_m of M.m
   | Simple_name_attr of t [@name "override-name"]
   | Simple_no_arg
+  | Simple_inline of { i : int }
   | Simple_cmdliner of cmdliner
 [@@deriving subliner]
 

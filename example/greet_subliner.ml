@@ -2,7 +2,8 @@ type subparams = { night : bool; name : string [@pos 0] [@docv "NAME"] }
 [@@deriving subliner]
 
 type params =
-  | English of subparams  (** Greet in English *)
+  | English of { night : bool; name : string [@pos 0] [@docv "NAME"] }
+      (** Greet in English *)
   | Chinese of subparams  (** Greet in Chinese *)
   | Programmer  (** Hello world! *)
 [@@deriving subliner]

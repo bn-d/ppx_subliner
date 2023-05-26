@@ -68,20 +68,28 @@ let handle_params_term_expr_of_const_decl
                 (Some [%expr params])
             in
             [%expr fun params -> [%e func_expr] [%e choice_expr]]
-          and param_term_fun_expr =
-            match ct.ptyp_desc with
-            | Ptyp_constr (lid, []) ->
-                lid
-                |> Utils.map_lid_name Term.gen_name_str
-                |> Ast_helper.Exp.ident
-            | _ -> Location.raise_errorf "constructor argument is not supported"
+          and param_term_expr =
+            let param_term_fun_expr =
+              match ct.ptyp_desc with
+              | Ptyp_constr (lid, []) ->
+                  lid
+                  |> Utils.map_lid_name Term.gen_name_str
+                  |> Ast_helper.Exp.ident
+              | _ ->
+                  Location.raise_errorf "constructor argument is not supported"
+            in
+            [%expr [%e param_term_fun_expr] ()]
           in
-          (handle_expr, [%expr [%e param_term_fun_expr] ()])
+          (handle_expr, param_term_expr)
       (* TODO: support multi arg and inline record *)
       | Pcstr_tuple _ ->
           Location.raise_errorf "constructor cannot have more than 1 arguments"
-      | Pcstr_record _ ->
-          Location.raise_errorf "inline record is currently not supported")
+      | Pcstr_record lds ->
+          let handle_expr = [%expr fun params -> [%e func_expr] params]
+          and param_term_expr =
+            Term.expression_of_label_decls ~loc ~const:(Some cd.pcd_name) lds
+          in
+          (handle_expr, param_term_expr))
 
 let cmd_vb_expr_of_const_decl
     (func_expr : expression)
@@ -110,8 +118,8 @@ let cmd_vb_expr_of_const_decl
           [%expr
             let info : Cmdliner.Cmd.info = [%e cmd_info_expr]
             and handle = [%e handle_expr]
-            and cmd_term = [%e params_term_expr] in
-            Cmdliner.(Cmd.v info Term.(const handle $ cmd_term))]
+            and params_term = [%e params_term_expr] in
+            Cmdliner.(Cmd.v info Term.(const handle $ params_term))]
         in
         Ast_helper.Vb.mk pat expr
       and var_expr =
