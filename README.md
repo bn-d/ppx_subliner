@@ -27,21 +27,17 @@ Please see the [documentation](https://boni.ng/ppx_subliner/ppx_subliner/index.h
 ## Example
 
 ```ocaml
-type subparams = { night : bool; name : string [@pos 0] } [@@deriving cmdliner]
+type params = Foo of { my_arg : string } | Bar [@@deriving subliner]
 
-type params =
-  | English of subparams  (** Greet in English *)
-  | Chinese of subparams  (** Greet in Chinese *)
-  | Programmer  (** Hello world! *)
-[@@deriving subliner]
+let handle = function
+  | Foo { my_arg } -> print_endline ("Foo " ^ my_arg)
+  | Bar -> print_endline "Bar"
 
-let greet = function
-  | English { night; name } -> Greet.english ~night name
-  | Chinese { night; name } -> Greet.chinese ~night name
-  | Programmer -> Greet.programmer ()
-
+(* {eval function}.{type name} <- {function expression> *)
 [%%subliner.cmds
-eval.params <- greet]
-[@@name "greet"] [@@version "3.14"]
-(** Greet in different languages! *)
+eval.params <- handle]
+[@@name "foobar"]
+[@@version "3.14"]
+[@@default Cmdliner.Term.(ret (const (`Error (false, "foobar2000"))))]
+(** Some docs *)
 ```

@@ -12,7 +12,7 @@ type simple =
   | Simple_name_attr of t [@name "override-name"]
   | Simple_no_arg
   | Simple_inline of { i : int }
-  | Simple_cmdliner of cmdliner (** ppx_deriving_cmdliner compatibility *)
+  | Simple_cmdliner of cmdliner  (** ppx_deriving_cmdliner compatibility *)
 [@@deriving subliner]
 
 let test =
@@ -32,7 +32,9 @@ let test_set =
       (Simple_name_attr { t = "test-str" })
       [| "cmd"; "override-name"; "-t"; "test-str" |];
     test "simple_no_arg" Simple_no_arg [| "cmd"; "simple-no-arg" |];
-    test "simple_inline" (Simple_inline { i =42}) [|"cmd"; "simple-inline"; "-i"; "42"|];
+    test "simple_inline"
+      (Simple_inline { i = 42 })
+      [| "cmd"; "simple-inline"; "-i"; "42" |];
     test "simple_cmdliner"
       (Simple_cmdliner { cmdliner = "test-str-cmdliner" })
       [| "cmd"; "simple-cmdliner"; "test-str-cmdliner" |];

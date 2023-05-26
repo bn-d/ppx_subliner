@@ -66,12 +66,14 @@ takes a handling function to process parsed input. A sub-command will be
 generated for each constructor in the variant. {!cmd_info_attr} can be attached
 to constructors to modify the behavior of the corresponding sub-commands.
 
-Each constructor of the variant can only have one or no parameter. If a
-constructor has a parameter with type [p], function [p_cmdliner_term] with type
-[unit -> p Cmdliner.Term.t] is required. The function can be either obtained by
-tagging a supported record with [[@@deriving subliner]],
+Each constructor of the variant can be inline records, one or more parameters,
+or no parameter at all . If a constructor has a parameter with type [p],
+function  [p_cmdliner_term] with type [unit -> p Cmdliner.Term.t] is required.
+The function can be either obtained by tagging a supported record with
+[[@@deriving subliner]],
 {{:https://github.com/hammerlab/ppx_deriving_cmdliner}[[@@deriving cmdliner]]}
-or constructed manually.
+or constructed manually. If a constructor has multiple parameters, all parameter
+types must have the corresponding functions.
 
 {[
 type foo = { my_arg : string }
