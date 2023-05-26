@@ -461,22 +461,23 @@ let core_type_of_type_name ~loc name =
   in
   [%type: unit -> [%t ct] Cmdliner.Term.t]
 
+let expression_of_label_decls ~loc (lds : label_declaration list) =
+  Ast_helper.with_default_loc loc (fun () ->
+      let make_vb, make_expr = make_fun_vb_expr_of_label_decls ~loc lds
+      and term_vbs, term_exprs =
+        lds |> List.map term_vb_expr_of_label_decl |> List.split
+      in
+      let aggregation_expr =
+        aggregation_expr_of_term_exprs ~loc make_expr term_exprs
+      in
+      Ast_helper.Exp.let_ Nonrecursive (make_vb :: term_vbs) aggregation_expr)
+
 let structure_of_label_decls ~loc name (lds : label_declaration list) =
   Ast_helper.with_default_loc loc (fun () ->
       let stri =
         let pat = Ast_helper.Pat.var @@ gen_name name
         and ct = core_type_of_type_name ~loc name
-        and expr =
-          let make_vb, make_expr = make_fun_vb_expr_of_label_decls ~loc lds
-          and term_vbs, term_exprs =
-            lds |> List.map term_vb_expr_of_label_decl |> List.split
-          in
-          let aggregation_expr =
-            aggregation_expr_of_term_exprs ~loc make_expr term_exprs
-          in
-          Ast_helper.Exp.let_ Nonrecursive (make_vb :: term_vbs)
-            aggregation_expr
-        in
+        and expr = expression_of_label_decls ~loc lds in
         [%stri let ([%p pat] : [%t ct]) = fun () -> [%e expr]]
       in
       [ stri ])

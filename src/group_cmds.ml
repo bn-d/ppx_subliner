@@ -59,7 +59,7 @@ let handle_params_term_expr_of_const_decl
             in
             [%expr fun () -> [%e func_expr] [%e choice_expr]]
           in
-          (handle_expr, [%expr const ()])
+          (handle_expr, [%expr Cmdliner.Term.const ()])
       | Pcstr_tuple [ ct ] ->
           let handle_expr =
             let choice_expr =
@@ -109,8 +109,9 @@ let cmd_vb_expr_of_const_decl
           in
           [%expr
             let info : Cmdliner.Cmd.info = [%e cmd_info_expr]
-            and handle = [%e handle_expr] in
-            Cmdliner.(Cmd.v info Term.(const handle $ [%e params_term_expr]))]
+            and handle = [%e handle_expr]
+            and cmd_term = [%e params_term_expr] in
+            Cmdliner.(Cmd.v info Term.(const handle $ cmd_term))]
         in
         Ast_helper.Vb.mk pat expr
       and var_expr =
