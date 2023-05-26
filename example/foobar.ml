@@ -1,8 +1,12 @@
-type params = Foo of { my_arg : string } | Bar [@@deriving subliner]
+type foo = { my_arg : string } [@@deriving subliner]
+
+type params = Foo of foo | Bar | Foobar of { my_arg : string }
+[@@deriving subliner]
 
 let handle = function
   | Foo { my_arg } -> print_endline ("Foo " ^ my_arg)
   | Bar -> print_endline "Bar"
+  | Foobar { my_arg } -> print_endline ("Foobar" ^ my_arg)
 
 (* {eval function}.{type name} <- {function expression> *)
 [%%subliner.cmds

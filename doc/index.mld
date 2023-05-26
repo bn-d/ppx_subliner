@@ -66,9 +66,11 @@ takes a handling function to process parsed input. A sub-command will be
 generated for each constructor in the variant. {!cmd_info_attr} can be attached
 to constructors to modify the behavior of the corresponding sub-commands.
 
-Each constructor of the variant can be inline records, one or more parameters,
-or no parameter at all . If a constructor has a parameter with type [p],
-function  [p_cmdliner_term] with type [unit -> p Cmdliner.Term.t] is required.
+Each constructor of the variant can have no parameters, one parameter, or a
+tuple of multiple parameters, or be an inline record.
+
+If a constructor has a parameter with type [p], function
+[p_cmdliner_term] with type [unit -> p Cmdliner.Term.t] is required.
 The function can be either obtained by tagging a supported record with
 [[@@deriving subliner]],
 {{:https://github.com/hammerlab/ppx_deriving_cmdliner}[[@@deriving cmdliner]]}
@@ -81,6 +83,20 @@ val foo_cmdliner_term : unit -> foo Cmdliner.Term,t
 
 type params =
   | Foo of foo
+  | Bar
+  | Foobar of { my_arg : string }
+[@@deriving_inline subliner]
+include
+  sig
+    [@@@ocaml.warning "-32"]
+    val params_cmdliner_group_cmds : (params -> 'a) -> 'a Cmdliner.Cmd.t list
+  end[@@ocaml.doc "@inline"]
+[@@@end]
+]}
+
+{[
+type params =
+  | Foo of { my_arg : string }
   | Bar
 [@@deriving_inline subliner]
 include
