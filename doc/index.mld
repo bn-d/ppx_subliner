@@ -120,7 +120,16 @@ All attributes may be prefixed with [subliner.] to avoid conflicts with other
 extensions.
 
 
-{2:term_attr [Term] Attributes}
+{2:term_attr [Term.t] Attributes}
+
+{3 [[@term t Term.t]]}
+
+Use the user provided [Term.t] for this field as it is. All other attributes
+will be ignored.
+
+{[
+type params = { foo : t [@term cmdliner_term ()] }
+]}
 
 {3 [[@names string list]]}
 
@@ -244,9 +253,10 @@ type params = Foo (** This is a short description of My_cmd. *)
 {3 Other}
 
 [[@version string]], [[@deprecated string]], [[@docs string]], [[@sdocs string]],
-[[@exits Exit.info list]], [[@envs Env.info list]], [[@man Manpage.block list]]
-and [[@man_xrefs Manpage.xref list]] are also supported. For their exact usages,
-please refer to the documentation of {{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Cmd/index.html#val-info}Cmdliner.Cmd.info}.
+[[@exits Cmd.Exit.info list]], [[@envs Cmd.Env.info list]],
+[[@man Manpage.block list]] and [[@man_xrefs Manpage.xref list]] are also
+supported. For their exact usages, please refer to the documentation of
+{{:https://erratique.ch/software/cmdliner/doc/Cmdliner/Cmd/index.html#val-info}Cmdliner.Cmd.info}.
 
 
 {2:default_term_attr Default [Term.t] Attribute}
