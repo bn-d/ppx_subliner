@@ -13,6 +13,7 @@ type simple =
   | Simple_no_arg
   | Simple_inline of { i : int }
   | Simple_cmdliner of cmdliner
+  | Simple_multi of t * M.m * cmdliner
 [@@deriving subliner]
 
 val test_set : unit Alcotest.test_case list
