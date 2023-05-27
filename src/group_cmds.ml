@@ -52,9 +52,6 @@ let param_term_expr_of_core_type ct =
         match ct.ptyp_desc with
         | Ptyp_constr (lid, []) ->
             lid |> Utils.map_lid_name Term.gen_name_str |> Ast_helper.Exp.ident
-        | Ptyp_tuple _ ->
-            Location.raise_errorf ~loc
-              "other constructor argument is not supported"
         | _ ->
             Location.raise_errorf ~loc "constructor argument is not supported"
       in
