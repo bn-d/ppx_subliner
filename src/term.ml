@@ -381,23 +381,27 @@ end
 
 module T = struct
   let expr_of_attrs ~loc name ct (attrs : attrs) =
-    let pos_count =
-      let count opt = if Option.is_some opt then 1 else 0 in
-      count attrs.pos
-      + count attrs.pos_all
-      + count attrs.pos_left
-      + count attrs.pos_right
-    in
-    match pos_count with
-    (* named *)
-    | 0 -> Named.expr_of_attrs ~loc name ct attrs
-    (* positional *)
-    | 1 -> Positional.expr_of_attrs ~loc ct attrs
-    (* multiple pos error *)
-    | _ ->
-        Location.raise_errorf ~loc
-          "only one of `pos`, `pos_all`, `pos_left` and `pos_right` can be \
-           specified at the same time"
+    let term = Ap.to_expr_opt "term" attrs.term in
+    match term with
+    | Some term_expr -> term_expr
+    | None -> (
+        let pos_count =
+          let count opt = if Option.is_some opt then 1 else 0 in
+          count attrs.pos
+          + count attrs.pos_all
+          + count attrs.pos_left
+          + count attrs.pos_right
+        in
+        match pos_count with
+        (* named *)
+        | 0 -> Named.expr_of_attrs ~loc name ct attrs
+        (* positional *)
+        | 1 -> Positional.expr_of_attrs ~loc ct attrs
+        (* multiple pos error *)
+        | _ ->
+            Location.raise_errorf ~loc
+              "only one of `pos`, `pos_all`, `pos_left` and `pos_right` can be \
+               specified at the same time")
 end
 
 let make_fun_vb_expr_of_label_decls ~loc ~const (lds : label_declaration list) =

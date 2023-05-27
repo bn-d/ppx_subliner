@@ -183,7 +183,7 @@ let opt_all () =
     ~argv ~expected ~pprinter:pp_opt_all_types
 
 type foo = {a1: string; b1: string} [@@deriving subliner, show]
-(*
+
 type terms_types = {foo: foo [@term foo_cmdliner_term ()]}
 [@@deriving subliner, show]
 
@@ -193,7 +193,7 @@ let terms () =
   cmd_test_case "expected custom @term to work"
     ~term:(terms_types_cmdliner_term ())
     ~argv ~expected ~pprinter:pp_terms_types
-*)(*
+(*
 type misc_types =
   { a1: string [@name "renamed"]
   ; b1: bool [@enum [("true", true); ("false", false)]]
@@ -242,7 +242,7 @@ let test_set =
 (*  ; ("enum types", `Quick, enums)*)
 (*  ; ("custom types", `Quick, customs)*)
   ; ("opt_all type", `Quick, opt_all)
-(*  ; ("term type", `Quick, terms)*)
+  ; ("term type", `Quick, terms)
 (*  ; ("misc types", `Quick, miscs)*) ]
 
 let () = Alcotest.run "Ppx_deriving_cmdliner" [("test", test_set)]

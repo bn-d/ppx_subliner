@@ -196,14 +196,16 @@ type sep = {
 }
 [@@deriving subliner]
 
+type term = { term : names [@term names_cmdliner_term ()] }
+[@@deriving subliner]
+
 let test_set =
   let f = (loc, [%str]) and e = (loc, [%str expr]) in
-  let test_names = test_ok "names" names_cmdliner_term
-  and test_sep = test_ok "sep" sep_cmdliner_term in
+  let test_names = test_ok "names" names_cmdliner_term in
   [
     test_names "long" { names = 1 } [| "cmd"; "--new_name"; "1" |];
     test_names "short" { names = 1 } [| "cmd"; "-n"; "1" |];
-    test_sep "simple"
+    test_ok "sep" sep_cmdliner_term "simple"
       {
         sep = [ 1; 2 ];
         list = [ 3; 4 ];
@@ -221,6 +223,9 @@ let test_set =
         "--nested=0#0#0;255#255#255";
         "--last-sep=9@10";
       |];
+    test_ok "term" term_cmdliner_term "simple"
+      { term = { names = 1 } }
+      [| "cmd"; "--new_name"; "1" |];
     test_raise "multi_pos"
       ~exn:
         "only one of `pos`, `pos_all`, `pos_left` and `pos_right` can be \

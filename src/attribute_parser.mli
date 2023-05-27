@@ -8,6 +8,8 @@ val to_expr_opt :
 
 module Term : sig
   type 'a t = {
+    (* term *)
+    term : 'a option;
     (* info *)
     deprecated : 'a option;
     absent : 'a option;

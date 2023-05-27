@@ -37,20 +37,20 @@ let parse_impl
     match name with
     | _ when Option.is_some tag -> Level.general tag
     | "ocaml.doc" -> Some (Derived `doc)
-    | _ when Utils.string_starts_with ~prefix name ->
-        let len = String.length name in
-        let name = String.sub name prefix_len (len - prefix_len) in
+    | _ when Utils.string_starts_with ~prefix name -> (
+        let name =
+          let len = String.length name in
+          String.sub name prefix_len (len - prefix_len)
+        in
         let tag = tag_of_string name in
-        if Option.is_some tag then
-          Level.prefixed tag
-        else
-          Error.attribute_name ~loc name
+        match tag with
+        | Some _ -> Level.prefixed tag
+        | None -> Error.attribute_name ~loc name)
     | _ -> None
   in
   attrs
   |> List.fold_left
        (fun acc attr ->
-         let loc = attr.attr_loc in
          tag_level_of_attr_name attr.attr_name
          |> function
          | None -> acc
@@ -58,6 +58,7 @@ let parse_impl
              update_field_of_tag (Level.get field)
                (Level.map
                   (fun _ ->
+                    let loc = attr.attr_loc in
                     match attr.attr_payload with
                     | PStr structure -> (loc, structure)
                     | _ -> Error.attribute_payload ~loc "attribute")
@@ -87,6 +88,8 @@ let to_expr_opt name = Option.map (to_expr name)
 
 module Term = struct
   type 'a t = {
+    (* term *)
+    term : 'a option;
     (* info *)
     deprecated : 'a option;
     absent : 'a option;
@@ -114,13 +117,13 @@ module Term = struct
     default : 'a option;
   }
   [@@deriving make]
-  (* TODO: support term *)
 
   let empty = make_t ()
 
   let map
       f
       {
+        term;
         deprecated;
         absent;
         docs;
@@ -144,6 +147,8 @@ module Term = struct
       } =
     let f = Option.map f in
     {
+      (* term *)
+      term = f term;
       (* info *)
       deprecated = f deprecated;
       absent = f absent;
@@ -173,6 +178,7 @@ module Term = struct
     }
 
   let tag_of_string = function
+    | "term" -> Some `term
     | "deprecated" | "deprecated_" -> Some `deprecated
     | "absent" -> Some `absent
     | "docs" -> Some `docs
@@ -197,6 +203,7 @@ module Term = struct
 
   let update_field_of_tag tag v t =
     match tag with
+    | `term -> { t with term = Level.join t.term v }
     | `deprecated -> { t with deprecated = Level.join t.deprecated v }
     | `absent -> { t with absent = Level.join t.absent v }
     | `docs -> { t with docs = Level.join t.docs v }
