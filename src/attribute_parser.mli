@@ -45,6 +45,11 @@ module Term : sig
   (** parse attribute list to a static type *)
 end
 
+module Conv : sig
+  val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) option
+  (** parse attribute list to a static type *)
+end
+
 module String_conv : sig
   type 'a t = { file : 'a option; dir : 'a option; non_dir_file : 'a option }
   [@@deriving make]

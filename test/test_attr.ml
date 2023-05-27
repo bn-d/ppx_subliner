@@ -128,6 +128,8 @@ module Single = struct
 
   let test_set =
     [
+      test Ap.Conv.parse "conv.empty" None [%expr t [@ocaml.doc]];
+      test Ap.Conv.parse "conv" (Some ()) [%expr t [@conv]];
       test Ap.Sep_conv.parse "sep.empty" None [%expr t [@ocaml.doc]];
       test Ap.Sep_conv.parse "sep" (Some ()) [%expr t [@sep]];
       test Ap.Default_term.parse "default.empty" None [%expr t [@ocaml.doc]];
