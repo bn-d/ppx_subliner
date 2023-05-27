@@ -94,19 +94,6 @@ include
 [@@@end]
 ]}
 
-{[
-type params =
-  | Foo of { my_arg : string }
-  | Bar
-[@@deriving_inline subliner]
-include
-  sig
-    [@@@ocaml.warning "-32"]
-    val params_cmdliner_group_cmds : (params -> 'a) -> 'a Cmdliner.Cmd.t list
-  end[@@ocaml.doc "@inline"]
-[@@@end]
-]}
-
 The derived function can be used with [[%%subliner.cmds]] extension to generate
 {{:https://opam.ocaml.org/packages/cmdliner/}Cmdliner} evaluation.
 {!cmd_info_attr} and {!default_term_attr} can be attached to the extension to

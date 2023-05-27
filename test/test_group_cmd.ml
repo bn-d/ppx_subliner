@@ -13,6 +13,7 @@ type simple =
   | Simple_no_arg
   | Simple_inline of { i : int }
   | Simple_cmdliner of cmdliner  (** ppx_deriving_cmdliner compatibility *)
+  | Simple_multi of t * M.m * cmdliner
 [@@deriving subliner]
 
 let test =
@@ -38,4 +39,16 @@ let test_set =
     test "simple_cmdliner"
       (Simple_cmdliner { cmdliner = "test-str-cmdliner" })
       [| "cmd"; "simple-cmdliner"; "test-str-cmdliner" |];
+    test "simple_multi"
+      (Simple_multi
+         ({ t = "test-str-t" }, { m = 42 }, { cmdliner = "test-str-cmdliner" }))
+      [|
+        "cmd";
+        "simple-multi";
+        "-t";
+        "test-str-t";
+        "-m";
+        "42";
+        "test-str-cmdliner";
+      |];
   ]

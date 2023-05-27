@@ -44,10 +44,70 @@ module Info = struct
         Ast_helper.Exp.apply [%expr Cmdliner.Cmd.info] args)
 end
 
-let handle_params_term_expr_of_const_decl
+(* only for types that has been derived *)
+let param_term_expr_of_core_type ct =
+  let loc = ct.ptyp_loc in
+  Ast_helper.with_default_loc loc (fun () ->
+      let param_term_fun_expr =
+        match ct.ptyp_desc with
+        | Ptyp_constr (lid, []) ->
+            lid |> Utils.map_lid_name Term.gen_name_str |> Ast_helper.Exp.ident
+        | Ptyp_tuple _ ->
+            Location.raise_errorf ~loc
+              "other constructor argument is not supported"
+        | _ ->
+            Location.raise_errorf ~loc "constructor argument is not supported"
+      in
+      [%expr [%e param_term_fun_expr] ()])
+
+let handle_tuple_expr_of_core_type
     ~loc
-    func_expr
+    name
+    (func_expr : expression)
+    (cts : core_type list) =
+  Ast_helper.with_default_loc loc (fun () ->
+      let names =
+        List.mapi
+          (fun i ct -> { txt = "v_" ^ string_of_int i; loc = ct.ptyp_loc })
+          cts
+      in
+      let pat =
+        let pats = List.map Ast_helper.Pat.var names in
+        Ast_helper.Pat.tuple pats
+      and choice_expr =
+        let tuple_expr =
+          names
+          |> List.map Utils.longident_loc_of_name
+          |> List.map Ast_helper.Exp.ident
+          |> Ast_helper.Exp.tuple
+        in
+        Ast_helper.Exp.construct
+          (Utils.longident_loc_of_name name)
+          (Some tuple_expr)
+      in
+      [%expr fun [%p pat] -> [%e func_expr] [%e choice_expr]])
+
+let make_tuple_expr_of_core_types ~loc (cts : core_type list) =
+  Ast_helper.with_default_loc loc (fun () ->
+      cts
+      |> List.mapi (fun i ct ->
+             let loc = ct.ptyp_loc and name_str = "v_" ^ string_of_int i in
+             let pat = Ast_helper.Pat.var ~loc { txt = name_str; loc }
+             and ident_expr =
+               Ast_helper.Exp.ident ~loc { txt = Lident name_str; loc }
+             in
+             (pat, ident_expr))
+      |> List.split
+      |> fun (pats, exprs) ->
+      let pats = List.rev pats and tuple_expr = Ast_helper.Exp.tuple exprs in
+      List.fold_left
+        (fun acc pat -> Ast_helper.Exp.fun_ Nolabel None pat acc)
+        tuple_expr pats)
+
+let handle_params_term_expr_of_const_decl
+    (func_expr : expression)
     (cd : constructor_declaration) : expression * expression =
+  let loc = cd.pcd_loc in
   Ast_helper.with_default_loc loc (fun () ->
       match cd.pcd_args with
       | Pcstr_tuple [] ->
@@ -68,22 +128,23 @@ let handle_params_term_expr_of_const_decl
                 (Some [%expr params])
             in
             [%expr fun params -> [%e func_expr] [%e choice_expr]]
+          and param_term_expr = param_term_expr_of_core_type ct in
+          (handle_expr, param_term_expr)
+      | Pcstr_tuple cts ->
+          let handle_expr =
+            handle_tuple_expr_of_core_type ~loc cd.pcd_name func_expr cts
           and param_term_expr =
-            let param_term_fun_expr =
-              match ct.ptyp_desc with
-              | Ptyp_constr (lid, []) ->
-                  lid
-                  |> Utils.map_lid_name Term.gen_name_str
-                  |> Ast_helper.Exp.ident
-              | _ ->
-                  Location.raise_errorf "constructor argument is not supported"
-            in
-            [%expr [%e param_term_fun_expr] ()]
+            let make_tuple_expr = make_tuple_expr_of_core_types ~loc cts in
+            cts
+            |> List.map param_term_expr_of_core_type
+            |> List.fold_left
+                 (fun acc param_term_expr ->
+                   Ast_helper.Exp.apply [%expr ( $ )]
+                     [ (Nolabel, acc); (Nolabel, param_term_expr) ])
+                 [%expr const [%e make_tuple_expr]]
+            |> fun e -> [%expr Cmdliner.Term.([%e e])]
           in
           (handle_expr, param_term_expr)
-      (* TODO: support multi arg and inline record *)
-      | Pcstr_tuple _ ->
-          Location.raise_errorf "constructor cannot have more than 1 arguments"
       | Pcstr_record lds ->
           let handle_expr = [%expr fun params -> [%e func_expr] params]
           and param_term_expr =
@@ -113,7 +174,7 @@ let cmd_vb_expr_of_const_decl
             Info.expr_of_attrs ~loc default_name_expr cd.pcd_attributes
             (* ('params -> 'result) * 'params Term.t *)
           and handle_expr, params_term_expr =
-            handle_params_term_expr_of_const_decl ~loc func_expr cd
+            handle_params_term_expr_of_const_decl func_expr cd
           in
           [%expr
             let info : Cmdliner.Cmd.info = [%e cmd_info_expr]
