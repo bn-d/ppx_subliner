@@ -15,6 +15,7 @@ module Term = struct
   let test_set =
     [
       test "empty" (M.make_t ()) [%expr t [@irrelevant]];
+      test "term" (M.make_t ~term:() ()) [%expr t [@term]];
       test "deprecated" (M.make_t ~deprecated:() ()) [%expr t [@deprecated]];
       test "deprecated_" (M.make_t ~deprecated:() ()) [%expr t [@deprecated_]];
       test "absent" (M.make_t ~absent:() ()) [%expr t [@absent]];
@@ -86,6 +87,7 @@ module String_conv = struct
 
   let test_set =
     [
+      test "empty" (M.make_t ()) [%expr t [@irrelevant] [@ocaml.doc]];
       test "file" (M.make_t ~file:() ()) [%expr t [@file]];
       test "dir" (M.make_t ~dir:() ()) [%expr t [@dir]];
       test "non_dir_file"
