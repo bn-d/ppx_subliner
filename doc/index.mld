@@ -288,6 +288,15 @@ type params = { foo : (string [@attr]) }
 type params = { foo : string [@attr] }
 ]}
 
+{3 [[@conv t Arg.conv]]}
+
+Use the user provided [Arg.conv] for this type as it is. All other attributes
+will be ignored.
+
+{[
+type params = { foo : (t [@conv cmdliner_conv]) list }
+]}
+
 {3 [[@file]], [[@dir]], [[@non_dir_file]]}
 
 Check whether the provided name for file, dir or non-dir file exists. Only one

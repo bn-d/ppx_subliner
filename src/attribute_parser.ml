@@ -230,6 +230,10 @@ module Term = struct
     parse_impl ~empty ~map ~tag_of_string ~update_field_of_tag attrs
 end
 
+module Conv = struct
+  let parse = parse_single "conv"
+end
+
 module String_conv = struct
   type 'a t = { file : 'a option; dir : 'a option; non_dir_file : 'a option }
   [@@deriving make]
@@ -260,8 +264,6 @@ end
 module Sep_conv = struct
   let parse = parse_single "sep"
 end
-
-(* TODO: support conv *)
 
 module Cmd_info = struct
   type 'a t = {

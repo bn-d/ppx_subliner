@@ -30,8 +30,13 @@ module Conv = struct
     | Pair of expression option * (t * t)
     | T3 of expression option * (t * t * t)
     | T4 of expression option * (t * t * t * t)
+    | Custom of expression
 
-  let rec of_core_type : core_type -> t = function
+  let rec of_core_type ct =
+    let conv = Ap.Conv.parse ct.ptyp_attributes |> Ap.to_expr_opt "conv" in
+
+    match ct with
+    | _ when Option.is_some conv -> Custom (Option.get conv)
     | [%type: bool] | [%type: Bool.t] -> Bool
     | [%type: char] | [%type: Char.t] -> Char
     | [%type: int] | [%type: Int.t] -> Int
@@ -137,6 +142,7 @@ module Conv = struct
           [%expr
             t4 ?sep:[%e sep_expr] [%e t0_expr] [%e t1_expr] [%e t2_expr]
               [%e t3_expr]]
+      | Custom expr -> expr
     in
 
     let expr = impl ~loc t in
