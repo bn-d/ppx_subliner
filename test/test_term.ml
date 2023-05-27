@@ -199,6 +199,10 @@ type sep = {
 type term = { term : names [@term names_cmdliner_term ()] }
 [@@deriving subliner]
 
+let custom_conv = Cmdliner.Arg.(list ~sep:'@' int)
+
+type conv = { conv : (int list[@conv custom_conv]) } [@@deriving subliner]
+
 let test_set =
   let f = (loc, [%str]) and e = (loc, [%str expr]) in
   let test_names = test_ok "names" names_cmdliner_term in
@@ -226,6 +230,9 @@ let test_set =
     test_ok "term" term_cmdliner_term "simple"
       { term = { names = 1 } }
       [| "cmd"; "--new_name"; "1" |];
+    test_ok "conv" conv_cmdliner_term "simple"
+      { conv = [ 1; 2; 3 ] }
+      [| "cmd"; "--conv"; "1@2@3" |];
     test_raise "multi_pos"
       ~exn:
         "only one of `pos`, `pos_all`, `pos_left` and `pos_right` can be \

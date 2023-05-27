@@ -52,6 +52,7 @@ let test_set =
       [%type: (int * float * char * bool[@sep [%e u]])];
     test "nested" (List (None, List (None, Int))) [%type: int list list];
     test "inside_attr" (List (None, File)) [%type: (string[@file]) list];
+    test "custom" (Custom [%expr ()]) [%type: (my_type[@conv ()])];
     test_raises "invalid_1" ~exn:"unsupported field type" [%type: int seq];
     test_raises "invalid_2" ~exn:"unsupported field type" [%type: unit];
     test_gen "basic" [%expr Cmdliner.Arg.(bool)] Bool;
@@ -84,4 +85,5 @@ let test_set =
     test_gen "t4.sep"
       [%expr Cmdliner.Arg.(t4 ?sep:[%e some] int float char bool)]
       (T4 (Some u, (Int, Float, Char, Bool)));
+    test_gen "custom" [%expr Cmdliner.Arg.(())] (Custom [%expr ()]);
   ]

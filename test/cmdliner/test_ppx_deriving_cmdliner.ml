@@ -162,8 +162,8 @@ module M = struct
     let print fmt t = Format.fprintf fmt "%s" (to_string t) in
     Cmdliner.Arg.conv ~docv:"M" (parse, print)
 end
-(**
-type custom_types = {foo: M.t [@conv M.cmdliner_converter]; bar: M.t}
+
+type custom_types = {foo: (M.t [@conv M.cmdliner_converter]); bar: (M.t [@conv M.cmdliner_converter])}
 [@@deriving subliner, show]
 
 let customs () =
@@ -172,7 +172,7 @@ let customs () =
   cmd_test_case "expected custom type converter to work"
     ~term:(custom_types_cmdliner_term ())
     ~argv ~expected ~pprinter:pp_custom_types
-*)
+
 type opt_all_types = {foo: string list [@opt_all]} [@@deriving subliner, show]
 
 let opt_all () =
@@ -240,7 +240,7 @@ let test_set =
   ; ("list sep types", `Quick, list_sep)
   ; ("positional types", `Quick, positional)
 (*  ; ("enum types", `Quick, enums)*)
-(*  ; ("custom types", `Quick, customs)*)
+  ; ("custom types", `Quick, customs)
   ; ("opt_all type", `Quick, opt_all)
   ; ("term type", `Quick, terms)
 (*  ; ("misc types", `Quick, miscs)*) ]

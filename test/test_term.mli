@@ -57,4 +57,9 @@ type sep = {
 }
 [@@deriving subliner]
 
+type term = { term : names [@term names_cmdliner_term ()] }
+[@@deriving subliner]
+
+type conv = { conv : (int list[@conv custom_conv]) } [@@deriving subliner]
+
 val test_set : unit Alcotest.test_case list
