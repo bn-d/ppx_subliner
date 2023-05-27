@@ -1,6 +1,6 @@
 (lang dune 2.7)
 (name ppx_subliner)
-(version "0.1.4")
+(version "0.2.0")
 
 (generate_opam_files true)
 
@@ -13,8 +13,8 @@
 (package
  (name ppx_subliner)
  (synopsis "[@@deriving subliner] and [%%subliner] for Cmdliner")
- (description "[@@deriving] plugin to generate Cmdliner sub-command groups \
- and ppx rewriter to generate Cmdliner evaluations.")
+ (description "[@@deriving] plugin to generate Cmdliner terms and sub-command \
+ groups and ppx rewriter to generate Cmdliner evaluations.")
  (depends
   (ppxlib (>= 0.10.0))
   (cmdliner (>= 1.1.0))
