@@ -20,15 +20,6 @@ include
     [@@@ocaml.warning &quot;-32&quot;]
     val params_cmdliner_group_cmds : (params -&gt; 'a) -&gt; 'a Cmdliner.Cmd.t list
   end[@@ocaml.doc &quot;@inline&quot;]
-[@@@end]</code></pre><pre class="language-ocaml"><code>type params =
-  | Foo of { my_arg : string }
-  | Bar
-[@@deriving_inline subliner]
-include
-  sig
-    [@@@ocaml.warning &quot;-32&quot;]
-    val params_cmdliner_group_cmds : (params -&gt; 'a) -&gt; 'a Cmdliner.Cmd.t list
-  end[@@ocaml.doc &quot;@inline&quot;]
 [@@@end]</code></pre><p>The derived function can be used with <code>[%%subliner.cmds]</code> extension to generate <a href="https://opam.ocaml.org/packages/cmdliner/">Cmdliner</a> evaluation. <a href="#cmd_info_attr"><code>Cmd.info</code> Attributes</a> and <a href="#default_term_attr">Default <code>Term.t</code> Attribute</a> can be attached to the extension to modify the behavior of the command line tools.</p><pre class="language-ocaml"><code>let handle = function
   | Foo { my_arg } -&gt; print_endline (&quot;Foo &quot; ^ my_arg)
   | Bar -&gt; print_endline &quot;Bar&quot;
