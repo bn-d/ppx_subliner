@@ -149,49 +149,45 @@ type conv = Conv.t
 
 module Cmd_env_info = struct
   let expr_of_attrs ~loc (attrs : attrs) : expression option =
-    Ast_helper.with_default_loc loc (fun () ->
-        Ap.to_expr_opt "env" attrs.env
-        |> Option.map (fun env_epxr ->
-               let args =
-                 let labelled =
-                   [
-                     ( "deprecated",
-                       Ap.to_expr_opt "env.deprecated" attrs.env_deprecated );
-                     ("docs", Ap.to_expr_opt "env.docs" attrs.env_docs);
-                     ("doc", Ap.to_expr_opt "env.doc" attrs.env_doc);
-                   ]
-                   |> List.filter_map (fun (name, expr_opt) ->
-                          Option.map
-                            (fun expr -> (Labelled name, expr))
-                            expr_opt)
-                 and no_label = [ (Nolabel, env_epxr) ] in
-                 labelled @ no_label
-               in
+    Ap.to_expr_opt "env" attrs.env
+    |> Option.map (fun env_epxr ->
+           let args =
+             let labelled =
+               [
+                 ( "deprecated",
+                   Ap.to_expr_opt "env.deprecated" attrs.env_deprecated );
+                 ("docs", Ap.to_expr_opt "env.docs" attrs.env_docs);
+                 ("doc", Ap.to_expr_opt "env.doc" attrs.env_doc);
+               ]
+               |> List.filter_map (fun (name, expr_opt) ->
+                      Option.map (fun expr -> (Labelled name, expr)) expr_opt)
+             and no_label = [ (Nolabel, env_epxr) ] in
+             labelled @ no_label
+           in
 
-               Ast_helper.Exp.apply [%expr Cmdliner.Cmd.Env.info] args))
+           Ast_helper.Exp.apply ~loc [%expr Cmdliner.Cmd.Env.info] args)
 end
 
 module Info = struct
   let expr_of_attrs ~loc (names_expr : expression) (attrs : attrs) : expression
       =
-    Ast_helper.with_default_loc loc (fun () ->
-        let args =
-          let labelled =
-            [
-              ("deprecated", Ap.to_expr_opt "deprecated" attrs.deprecated);
-              ("absent", Ap.to_expr_opt "absent" attrs.absent);
-              ("docs", Ap.to_expr_opt "docs" attrs.docs);
-              ("docv", Ap.to_expr_opt "docv" attrs.docv);
-              ("doc", Ap.to_expr_opt "doc" attrs.doc);
-              ("env", Cmd_env_info.expr_of_attrs ~loc attrs);
-            ]
-            |> List.filter_map (fun (name, expr_opt) ->
-                   Option.map (fun expr -> (Labelled name, expr)) expr_opt)
-          (* names_expr should always resolved by Named or Positional *)
-          and no_label = [ (Nolabel, names_expr) ] in
-          labelled @ no_label
-        in
-        Ast_helper.Exp.apply [%expr Cmdliner.Arg.info] args)
+    let args =
+      let labelled =
+        [
+          ("deprecated", Ap.to_expr_opt "deprecated" attrs.deprecated);
+          ("absent", Ap.to_expr_opt "absent" attrs.absent);
+          ("docs", Ap.to_expr_opt "docs" attrs.docs);
+          ("docv", Ap.to_expr_opt "docv" attrs.docv);
+          ("doc", Ap.to_expr_opt "doc" attrs.doc);
+          ("env", Cmd_env_info.expr_of_attrs ~loc attrs);
+        ]
+        |> List.filter_map (fun (name, expr_opt) ->
+               Option.map (fun expr -> (Labelled name, expr)) expr_opt)
+      (* names_expr should always resolved by Named or Positional *)
+      and no_label = [ (Nolabel, names_expr) ] in
+      labelled @ no_label
+    in
+    Ast_helper.Exp.apply ~loc [%expr Cmdliner.Arg.info] args
 end
 
 module As_term = struct
@@ -407,65 +403,62 @@ module T = struct
 end
 
 let make_fun_vb_expr_of_label_decls ~loc ~const (lds : label_declaration list) =
-  Ast_helper.with_default_loc loc (fun () ->
-      let vb =
-        let pat = Ast_helper.Pat.var { txt = "make"; loc }
-        and expr =
-          lds
-          |> List.map (fun ld ->
-                 let li = Utils.longident_loc_of_name ld.pld_name in
-                 (li, Ast_helper.Exp.ident li))
-          |> fun fields ->
-          Ast_helper.Exp.record fields None
-          |> fun record_expr ->
-          (match const with
-          | None -> record_expr
-          | Some const ->
-              Ast_helper.Exp.construct
-                (Utils.longident_loc_of_name const)
-                (Some record_expr))
-          |> fun value_expr ->
-          List.fold_left
-            (fun acc ld ->
-              let pat = Ast_helper.Pat.var ld.pld_name in
-              Ast_helper.Exp.fun_ Nolabel None pat acc)
-            value_expr (List.rev lds)
-        in
-        Ast_helper.Vb.mk pat expr
-      and var_expr = [%expr make] in
-      (vb, var_expr))
+  let vb =
+    let pat = Ast_helper.Pat.var ~loc { txt = "make"; loc }
+    and expr =
+      lds
+      |> List.map (fun ld ->
+             let li = Utils.longident_loc_of_name ld.pld_name in
+             (li, Ast_helper.Exp.ident ~loc li))
+      |> fun fields ->
+      Ast_helper.Exp.record ~loc fields None
+      |> fun record_expr ->
+      (match const with
+      | None -> record_expr
+      | Some const ->
+          Ast_helper.Exp.construct ~loc
+            (Utils.longident_loc_of_name const)
+            (Some record_expr))
+      |> fun value_expr ->
+      List.fold_left
+        (fun acc ld ->
+          let pat = Ast_helper.Pat.var ~loc ld.pld_name in
+          Ast_helper.Exp.fun_ ~loc Nolabel None pat acc)
+        value_expr (List.rev lds)
+    in
+    Ast_helper.Vb.mk ~loc pat expr
+  and var_expr = [%expr make] in
+  (vb, var_expr)
 
 let term_vb_expr_of_label_decl (ld : label_declaration) =
   let loc = ld.pld_loc in
-  Ast_helper.with_default_loc loc (fun () ->
-      let name_str = ld.pld_name.txt in
-      let var_name = { txt = Printf.sprintf "subterm_%s" name_str; loc } in
+  let name_str = ld.pld_name.txt in
+  let var_name = { txt = Printf.sprintf "subterm_%s" name_str; loc } in
 
-      let vb =
-        let pat = Ast_helper.Pat.var var_name
-        and expr =
-          ld.pld_attributes
-          |> Ap.Term.parse
-          |> T.expr_of_attrs ~loc ld.pld_name ld.pld_type
-        in
-        Ast_helper.Vb.mk pat expr
-      and var_expr =
-        var_name |> Utils.longident_loc_of_name |> Ast_helper.Exp.ident
-      in
-      (vb, var_expr))
+  let vb =
+    let pat = Ast_helper.Pat.var ~loc var_name
+    and expr =
+      ld.pld_attributes
+      |> Ap.Term.parse
+      |> T.expr_of_attrs ~loc ld.pld_name ld.pld_type
+    in
+    Ast_helper.Vb.mk ~loc pat expr
+  and var_expr =
+    var_name |> Utils.longident_loc_of_name |> Ast_helper.Exp.ident ~loc
+  in
+  (vb, var_expr)
 
 let aggregation_expr_of_term_exprs
     ~loc
     (make_expr : expression)
     (term_exprs : expression list) =
-  Ast_helper.with_default_loc loc (fun () ->
-      let expr =
-        List.fold_left
-          (fun acc term_expr -> [%expr [%e acc] $ [%e term_expr]])
-          [%expr const [%e make_expr]]
-          term_exprs
-      in
-      [%expr Cmdliner.Term.([%e expr])])
+  let expr =
+    List.fold_left
+      (fun acc term_expr -> [%expr [%e acc] $ [%e term_expr]])
+      [%expr const [%e make_expr]]
+      term_exprs
+  in
+  [%expr Cmdliner.Term.([%e expr])]
 
 let core_type_of_type_name ~loc name =
   let ct =
@@ -475,31 +468,27 @@ let core_type_of_type_name ~loc name =
   [%type: unit -> [%t ct] Cmdliner.Term.t]
 
 let expression_of_label_decls ~loc ~const (lds : label_declaration list) =
-  Ast_helper.with_default_loc loc (fun () ->
-      let make_vb, make_expr = make_fun_vb_expr_of_label_decls ~loc ~const lds
-      and term_vbs, term_exprs =
-        lds |> List.map term_vb_expr_of_label_decl |> List.split
-      in
-      let aggregation_expr =
-        aggregation_expr_of_term_exprs ~loc make_expr term_exprs
-      in
-      Ast_helper.Exp.let_ Nonrecursive (make_vb :: term_vbs) aggregation_expr)
+  let make_vb, make_expr = make_fun_vb_expr_of_label_decls ~loc ~const lds
+  and term_vbs, term_exprs =
+    lds |> List.map term_vb_expr_of_label_decl |> List.split
+  in
+  let aggregation_expr =
+    aggregation_expr_of_term_exprs ~loc make_expr term_exprs
+  in
+  Ast_helper.Exp.let_ ~loc Nonrecursive (make_vb :: term_vbs) aggregation_expr
 
 let structure_of_label_decls ~loc name (lds : label_declaration list) =
-  Ast_helper.with_default_loc loc (fun () ->
-      let stri =
-        let pat = Ast_helper.Pat.var @@ gen_name name
-        and ct = core_type_of_type_name ~loc name
-        and expr = expression_of_label_decls ~loc ~const:None lds in
-        [%stri let ([%p pat] : [%t ct]) = fun () -> [%e expr]]
-      in
-      [ stri ])
+  let stri =
+    let pat = Ast_helper.Pat.var ~loc @@ gen_name name
+    and ct = core_type_of_type_name ~loc name
+    and expr = expression_of_label_decls ~loc ~const:None lds in
+    [%stri let ([%p pat] : [%t ct]) = fun () -> [%e expr]]
+  in
+  [ stri ]
 
 let signature_of_label_decls ~loc name =
-  Ast_helper.with_default_loc loc (fun () ->
-      let sigi =
-        let fun_name = gen_name name
-        and ct = core_type_of_type_name ~loc name in
-        Ast_helper.Val.mk fun_name ct |> Ast_helper.Sig.value
-      in
-      [ sigi ])
+  let sigi =
+    let fun_name = gen_name name and ct = core_type_of_type_name ~loc name in
+    Ast_helper.Val.mk ~loc fun_name ct |> Ast_helper.Sig.value ~loc
+  in
+  [ sigi ]
