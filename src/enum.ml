@@ -32,7 +32,7 @@ let core_type_of_type_name ~loc name =
     let lid = Utils.longident_loc_of_name name in
     Ast_helper.Typ.constr ~loc lid []
   in
-  [%type: [%t ct] Cmdliner.Arg.conv]
+  [%type: unit -> [%t ct] Cmdliner.Arg.conv]
 
 let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
   let stri =
@@ -44,6 +44,7 @@ let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
     in
     [%stri
       let ([%p pat] : [%t ct]) =
+       fun () ->
         let enums = List.concat [%e expr] in
         Cmdliner.Arg.enum enums]
   in

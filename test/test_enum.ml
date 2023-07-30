@@ -3,7 +3,8 @@ type t = Enum_1 | Enum_2 [@names [ "override-name"; "o" ]]
 
 let cmdliner_term () =
   let open Cmdliner in
-  Arg.required @@ Arg.pos 0 (Arg.some cmdliner_conv) None (Cmdliner.Arg.info [])
+  Arg.required
+  @@ Arg.pos 0 (Arg.some @@ cmdliner_conv ()) None (Cmdliner.Arg.info [])
 
 let test = Test_term.test_ok "simple" cmdliner_term
 let test_error = Test_term.test_error "simple" cmdliner_term
