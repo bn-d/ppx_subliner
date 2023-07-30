@@ -340,6 +340,10 @@ module Cmd_info = struct
     parse_impl ~empty ~map ~tag_of_string ~update_field_of_tag attrs
 end
 
+module Enum = struct
+  let parse = parse_single "names"
+end
+
 module Default_term = struct
   let parse = parse_single "default"
 end
