@@ -53,14 +53,12 @@ let cmd_expr_of_func_expr ~loc ~attrs t lid func_expr : expression =
 let eval_fun_of_expr ~loc ~attrs t (expr : expression) : structure_item =
   match expr.pexp_desc with
   | Pexp_setfield (eval_expr, type_lid, func_expr) ->
-      Ast_helper.with_default_loc expr.pexp_loc (fun () ->
-          let cmd_expr =
-            cmd_expr_of_func_expr ~loc ~attrs t type_lid func_expr
-          in
-          [%stri
-            let () =
-              let cmd = [%e cmd_expr] in
-              exit (Cmdliner.Cmd.([%e eval_expr]) cmd)])
+      let loc = expr.pexp_loc in
+      let cmd_expr = cmd_expr_of_func_expr ~loc ~attrs t type_lid func_expr in
+      [%stri
+        let () =
+          let cmd = [%e cmd_expr] in
+          exit (Cmdliner.Cmd.([%e eval_expr]) cmd)]
   | _ -> unsupported_error ~loc
 
 let eval_fun_of_payload ~loc ~attrs t : payload -> structure_item = function
