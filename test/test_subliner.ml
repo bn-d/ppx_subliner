@@ -13,4 +13,5 @@ let () =
       ("term.postional", Test_term.Positional.test_set);
       ("term", Test_term.test_set);
       ("group-cmd", Test_group_cmd.test_set);
+      ("enum", Test_enum.test_set);
     ]

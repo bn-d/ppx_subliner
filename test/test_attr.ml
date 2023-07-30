@@ -132,6 +132,8 @@ module Single = struct
       test Ap.Conv.parse "conv" (Some ()) [%expr t [@conv]];
       test Ap.Sep_conv.parse "sep.empty" None [%expr t [@ocaml.doc]];
       test Ap.Sep_conv.parse "sep" (Some ()) [%expr t [@sep]];
+      test Ap.Enum.parse "enum.empty" None [%expr t [@ocaml.doc]];
+      test Ap.Enum.parse "enum" (Some ()) [%expr t [@names]];
       test Ap.Default_term.parse "default.empty" None [%expr t [@ocaml.doc]];
       test Ap.Default_term.parse "default" (Some ()) [%expr t [@default]];
     ]
