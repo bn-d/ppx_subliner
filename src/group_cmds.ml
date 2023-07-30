@@ -2,11 +2,7 @@ open Ppxlib
 module Ap = Attribute_parser
 
 let suffix = "cmdliner_group_cmds"
-
-let gen_name_str = function
-  | "t" -> suffix
-  | s -> Printf.sprintf "%s_%s" s suffix
-
+let gen_name_str = Utils.gen_name_str suffix
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
 type info_attrs = expression Ap.Cmd_info.t
@@ -211,7 +207,7 @@ let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
       in
       [ stri ])
 
-let signature_of_const_decls ~loc name (_cds : constructor_declaration list) =
+let signature_of_const_decls ~loc name =
   Ast_helper.with_default_loc loc (fun () ->
       let sigi =
         let fun_name = gen_name name

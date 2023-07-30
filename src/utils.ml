@@ -16,6 +16,10 @@ let string_starts_with ~prefix s =
 
 (* Misc. Utils *)
 
+let gen_name_str suffix = function
+  | "t" -> suffix
+  | s -> Printf.sprintf "%s_%s" s suffix
+
 let check_params_empty { txt; loc } params =
   if List.length params == 0 then
     ()

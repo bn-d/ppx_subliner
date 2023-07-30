@@ -1,3 +1,19 @@
+val test_ok :
+  string ->
+  (unit -> 'a Cmdliner.Term.t) ->
+  string ->
+  'a ->
+  string array ->
+  unit Alcotest.test_case
+
+val test_error :
+  string ->
+  (unit -> 'a Cmdliner.Term.t) ->
+  string ->
+  Cmdliner.Cmd.eval_error ->
+  string array ->
+  unit Alcotest.test_case
+
 module Named : sig
   type simple = {
     flag : bool;

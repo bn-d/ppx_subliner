@@ -88,6 +88,11 @@ module Cmd_info : sig
   (** parse attribute list to a static type *)
 end
 
+module Enum : sig
+  val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) option
+  (** parse attribute list to a static type *)
+end
+
 module Default_term : sig
   val parse : Ppxlib.attributes -> (Ppxlib.location * Ppxlib.structure) option
   (** parse attribute list to a static type *)
