@@ -2,11 +2,7 @@ open Ppxlib
 module Ap = Attribute_parser
 
 let suffix = "cmdliner_term"
-
-let gen_name_str = function
-  | "t" -> suffix
-  | s -> Printf.sprintf "%s_%s" s suffix
-
+let gen_name_str = Utils.gen_name_str suffix
 let gen_name { txt = name; loc } = { txt = gen_name_str name; loc }
 
 type attrs = (location * structure) Ap.Term.t
@@ -499,7 +495,7 @@ let structure_of_label_decls ~loc name (lds : label_declaration list) =
       in
       [ stri ])
 
-let signature_of_label_decls ~loc name (_lds : label_declaration list) =
+let signature_of_label_decls ~loc name =
   Ast_helper.with_default_loc loc (fun () ->
       let sigi =
         let fun_name = gen_name name
