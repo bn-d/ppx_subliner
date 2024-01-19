@@ -463,7 +463,7 @@ let aggregation_expr_of_term_exprs
 let core_type_of_type_name ~loc name =
   let ct =
     let lid = Utils.longident_loc_of_name name in
-    Ast_helper.Typ.constr lid []
+    Ast_helper.Typ.constr ~loc lid []
   in
   [%type: unit -> [%t ct] Cmdliner.Term.t]
 
