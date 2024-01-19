@@ -53,6 +53,6 @@ let structure_of_const_decls ~loc name (cds : constructor_declaration list) =
 let signature_of_const_decls ~loc name =
   let sigi =
     let fun_name = gen_name name and ct = core_type_of_type_name ~loc name in
-    Ast_helper.Val.mk ~loc fun_name ct |> Ast_helper.Sig.value
+    Ast_helper.Val.mk ~loc fun_name ct |> Ast_helper.Sig.value ~loc
   in
   [ sigi ]
