@@ -6,6 +6,11 @@ val to_expr_opt :
   (Ppxlib.location * Ppxlib.structure) option ->
   Ppxlib.expression option
 
+val to_trimmed_string_expr_opt :
+  string ->
+  (Ppxlib.location * Ppxlib.structure) option ->
+  Ppxlib.expression option
+
 module Term : sig
   type 'a t = {
     (* term *)

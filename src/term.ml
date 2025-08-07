@@ -178,7 +178,7 @@ module Info = struct
           ("absent", Ap.to_expr_opt "absent" attrs.absent);
           ("docs", Ap.to_expr_opt "docs" attrs.docs);
           ("docv", Ap.to_expr_opt "docv" attrs.docv);
-          ("doc", Ap.to_expr_opt "doc" attrs.doc);
+          ("doc", Ap.to_trimmed_string_expr_opt "doc" attrs.doc);
           ("env", Cmd_env_info.expr_of_attrs ~loc attrs);
         ]
         |> List.filter_map (fun (name, expr_opt) ->

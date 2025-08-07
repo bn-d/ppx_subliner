@@ -3,7 +3,10 @@ open Ppx_subliner.Term.Info
 module Ap = Ppx_subliner.Attribute_parser.Term
 
 let loc = Location.none
-let test_gen = Utils.test_equal Utils.pp (expr_of_attrs ~loc [%expr [ "NAME" ]])
+
+let test_gen =
+  Utils.test_equal Ppxlib.Pprintast.expression
+    (expr_of_attrs ~loc [%expr [ "NAME" ]])
 
 let test_set =
   let u = (loc, [%str ()]) in
@@ -14,8 +17,8 @@ let test_set =
          [%expr Cmdliner.Cmd.Env.info ~deprecated:() ~docs:() ~doc:() ()]
        in
        [%expr
-         Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:() ~doc:()
-           ~env:[%e env_expr] [ "NAME" ]])
+         Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:()
+           ~doc:(Stdlib.String.trim ()) ~env:[%e env_expr] [ "NAME" ]])
       (Ap.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u
          ~env_deprecated:u ~env_docs:u ~env_doc:u ());
   ]
