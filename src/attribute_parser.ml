@@ -86,6 +86,14 @@ let to_expr name = function
 
 let to_expr_opt name = Option.map (to_expr name)
 
+let to_trimmed_string_expr name expr =
+  match expr with
+  | loc, [ { pstr_desc = Pstr_eval (expr, _); _ } ] ->
+      [%expr Stdlib.String.trim [%e expr]]
+  | loc, _ -> Error.attribute_payload ~loc name
+
+let to_trimmed_string_expr_opt name = Option.map (to_trimmed_string_expr name)
+
 module Term = struct
   type 'a t = {
     (* term *)

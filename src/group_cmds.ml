@@ -158,7 +158,7 @@ let cmd_vb_expr_of_const_decl
           |> Ast_builder.Default.estring ~loc:cd.pcd_name.loc
         in
         Info.expr_of_attrs ~loc default_name_expr cd.pcd_attributes
-        (* ('params -> 'result) * 'params Term.t *)
+      (* ('params -> 'result) * 'params Term.t *)
       and handle_expr, params_term_expr =
         handle_params_term_expr_of_const_decl func_expr cd
       in
