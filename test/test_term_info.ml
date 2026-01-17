@@ -16,9 +16,10 @@ let test_set =
       (let env_expr =
          [%expr Cmdliner.Cmd.Env.info ~deprecated:() ~docs:() ~doc:() ()]
        in
+       let trimmed_str_expr = [%expr Stdlib.String.trim ()] in
        [%expr
          Cmdliner.Arg.info ~deprecated:() ~absent:() ~docs:() ~docv:()
-           ~doc:(Stdlib.String.trim ()) ~env:[%e env_expr] [ "NAME" ]])
+           ~doc:[%e trimmed_str_expr] ~env:[%e env_expr] [ "NAME" ]])
       (Ap.make_t ~deprecated:u ~absent:u ~docs:u ~docv:u ~doc:u ~env:u
          ~env_deprecated:u ~env_docs:u ~env_doc:u ());
   ]

@@ -7,6 +7,8 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions: read-all
+
 jobs:
   build:
     strategy:
@@ -16,16 +18,16 @@ jobs:
           - ubuntu-latest
         ocaml-compiler:
           - 4.08.x
-          - 4.14.1
+          - 4.14.2
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout tree
+        uses: actions/checkout@v6
 
       - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
@@ -39,7 +41,7 @@ jobs:
         run: opam exec -- dune runtest --verbose
 
       - name: Coverage
-        if: ${{ matrix.ocaml-compiler == '4.14.1' }}
+        if: ${{ matrix.ocaml-compiler == '4.14.2' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           PULL_REQUEST_NUMBER: ${{ github.event.number }}
