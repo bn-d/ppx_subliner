@@ -20,7 +20,7 @@ $ opam install ppx_subliner
 ```
 
 ## Usage
-Please see the [documentation](https://boni.ng/ppx_subliner/ppx_subliner/index.html).
+Please see the [documentation](https://ocaml.org/p/ppx_subliner/latest/doc/index.html).
 
 [cmdliner]: https://github.com/dbuenzli/cmdliner
 
