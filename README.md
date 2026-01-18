@@ -5,7 +5,7 @@
 [![Coverage Status][coveralls-badge]](https://coveralls.io/github/bn-d/ppx_subliner?branch=main)
 
 [ocaml-badge]: https://img.shields.io/badge/-OCaml-EC6813?logo=ocaml&labelColor=white
-[ci-badge]: https://github.com/bn-d/ppx_subliner/actions/workflows/build.yml/badge.svg?branch=master
+[ci-badge]: https://github.com/bn-d/ppx_subliner/actions/workflows/build.yml/badge.svg?branch=main
 [release-badge]: https://img.shields.io/github/v/release/bn-d/ppx_subliner
 [coveralls-badge]: https://coveralls.io/repos/github/bn-d/ppx_subliner/badge.svg?branch=main
 
